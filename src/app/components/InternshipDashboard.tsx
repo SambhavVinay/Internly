@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import SearchForm from "./SearchForm";
 import type { SearchFilters } from "./SearchForm";
 import JobCard from "./JobCard";
 import StatusBanner from "./StatusBanner";
+import SchoolFilter from "./SchoolFilter";
+import type { SchoolsData } from "./SchoolFilter";
 
 const API_BASE = "http://localhost:8000";
 
@@ -15,6 +17,8 @@ export interface Job {
   link: string | null;
   posted: string | null;
   posted_datetime: string | null;
+  programs: string[];
+  schools: string[];
 }
 
 type ScrapeStatus = "idle" | "loading" | "success" | "error";
@@ -29,29 +33,49 @@ export default function InternshipDashboard() {
   const [engine, setEngine] = useState("");
   const [scrapeUrl, setScrapeUrl] = useState("");
 
+  const [schools, setSchools] = useState<SchoolsData>({});
+  const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
+
+  // Fetch school registry once on mount — used for the filter chips.
+  useEffect(() => {
+    fetch(`${API_BASE}/schools`)
+      .then((r) => r.json())
+      .then(setSchools)
+      .catch(() => {});
+  }, []);
+
+  // Per-school job counts (computed from full unfiltered list).
+  const counts: Record<string, number> = {};
+  for (const code of Object.keys(schools)) {
+    counts[code] = jobs.filter((j) => j.schools.includes(code)).length;
+  }
+
+  const filteredJobs = selectedSchool
+    ? jobs.filter((j) => j.schools.includes(selectedSchool))
+    : jobs;
+
   const handleScrape = useCallback(async (filters: SearchFilters) => {
     setStatus("loading");
     setErrorMsg("");
     setJobs([]);
     setEngine("");
     setScrapeUrl("");
-    setLastQuery({ keywords: filters.keywords, location: filters.location });
+    setSelectedSchool(null);
+
+    // Location is server-fixed (Bengaluru metro via f_PP); show it in the banner
+    // for clarity rather than letting the user think they can change it.
+    setLastQuery({ keywords: filters.keywords, location: "Bengaluru metro" });
 
     const startTime = Date.now();
 
     try {
       const params = new URLSearchParams({
         keywords: filters.keywords,
-        location: filters.location,
-        experience: filters.experience,
         freshness: filters.freshness,
-        actively_hiring: String(filters.actively_hiring),
-        easy_apply: String(filters.easy_apply),
-        verified_only: String(filters.verified_only),
-        sort_by: filters.sort_by,
       });
-      if (filters.job_type) params.set("job_type", filters.job_type);
-      if (filters.work_type) params.set("work_type", filters.work_type);
+      // FastAPI collects repeated keys into a list automatically.
+      for (const wt of filters.work_types) params.append("work_types", wt);
+      for (const jt of filters.job_types) params.append("job_types", jt);
 
       const res = await fetch(
         `${API_BASE}/scrape-internships?${params.toString()}`,
@@ -221,6 +245,16 @@ export default function InternshipDashboard() {
           </div>
         )}
 
+        {/* ── School Filter ─────────────────────────── */}
+        {status === "success" && jobs.length > 0 && Object.keys(schools).length > 0 && (
+          <SchoolFilter
+            schools={schools}
+            selectedSchool={selectedSchool}
+            onChange={setSelectedSchool}
+            counts={counts}
+          />
+        )}
+
         {/* ── Skeleton Loading ──────────────────────── */}
         {status === "loading" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
@@ -244,15 +278,36 @@ export default function InternshipDashboard() {
         )}
 
         {/* ── Results Grid ─────────────────────────── */}
-        {status === "success" && jobs.length > 0 && (
+        {status === "success" && filteredJobs.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-            {jobs.map((job, i) => (
+            {filteredJobs.map((job, i) => (
               <JobCard key={i} job={job} index={i} />
             ))}
           </div>
         )}
 
-        {/* ── Empty State ──────────────────────────── */}
+        {/* ── Empty State (filtered) ────────────────── */}
+        {status === "success" && jobs.length > 0 && filteredJobs.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 animate-fade-in-up">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mb-5"
+              style={{ background: "var(--surface-1)" }}
+            >
+              🔍
+            </div>
+            <p
+              className="text-base font-medium"
+              style={{ color: "var(--foreground)" }}
+            >
+              No jobs match this school filter
+            </p>
+            <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
+              Try a different school or clear the filter to see all results.
+            </p>
+          </div>
+        )}
+
+        {/* ── Empty State (no results) ──────────────── */}
         {status === "success" && jobs.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 animate-fade-in-up">
             <div
@@ -306,11 +361,12 @@ export default function InternshipDashboard() {
               className="text-sm mt-1.5 max-w-sm text-center leading-relaxed"
               style={{ color: "var(--muted)" }}
             >
-              Enter keywords and a location, tune the{" "}
-              <span style={{ color: "var(--accent)" }}>Advanced Filters</span>{" "}
-              for precision, then hit{" "}
+              Enter keywords, tick the{" "}
+              <span style={{ color: "var(--accent)" }}>work-type</span> /{" "}
+              <span style={{ color: "var(--accent)" }}>job-type</span> filters
+              you care about, then hit{" "}
               <span style={{ color: "var(--accent)" }}>Scrape</span> to pull
-              fresh internships from LinkedIn.
+              fresh Bengaluru-metro internships from LinkedIn.
             </p>
             <div
               className="flex items-center gap-4 mt-6 text-[10px] font-mono uppercase tracking-wider"

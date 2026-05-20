@@ -69,7 +69,7 @@ export default function JobCard({ job, index }: JobCardProps) {
       </div>
 
       {/* Location */}
-      <div className="flex items-center gap-1.5 mb-4">
+      <div className="flex items-center gap-1.5 mb-3">
         <svg
           className="w-3.5 h-3.5 shrink-0"
           style={{ color: "var(--muted)" }}
@@ -93,6 +93,37 @@ export default function JobCard({ job, index }: JobCardProps) {
           {job.location || "Location not specified"}
         </p>
       </div>
+
+      {/* Program tags */}
+      {job.programs && job.programs.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-4">
+          {job.programs.slice(0, 3).map((prog) => (
+            <span
+              key={prog}
+              className="px-2 py-0.5 rounded text-[10px] font-medium"
+              style={{
+                background: "var(--surface-2)",
+                color: "var(--muted)",
+                border: "1px solid var(--card-border)",
+              }}
+            >
+              {prog}
+            </span>
+          ))}
+          {job.programs.length > 3 && (
+            <span
+              className="px-2 py-0.5 rounded text-[10px] font-medium"
+              style={{
+                background: "var(--surface-2)",
+                color: "var(--muted)",
+                border: "1px solid var(--card-border)",
+              }}
+            >
+              +{job.programs.length - 3} more
+            </span>
+          )}
+        </div>
+      )}
 
       {/* CTA */}
       {job.link ? (

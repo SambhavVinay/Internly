@@ -58,8 +58,8 @@ export default function StatusBanner({
             Scraping in progress…
           </p>
           <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
-            Searching for &quot;{lastQuery.keywords}&quot; internships in{" "}
-            {lastQuery.location}. Trying Selenium → Playwright fallback.
+            Searching for &quot;{lastQuery.keywords}&quot; in {lastQuery.location}.
+            Selenium scroll + HTTP pagination.
           </p>
         </div>
       </div>
