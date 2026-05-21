@@ -41,7 +41,7 @@ export default function InternshipDashboard() {
     fetch(`${API_BASE}/schools`)
       .then((r) => r.json())
       .then(setSchools)
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Per-school job counts (computed from full unfiltered list).
@@ -114,7 +114,7 @@ export default function InternshipDashboard() {
       <header
         className="sticky top-0 z-50 backdrop-blur-xl border-b"
         style={{
-          background: "rgba(6, 6, 10, 0.82)",
+          background: "var(--header-bg)",
           borderColor: "var(--card-border)",
         }}
       >
@@ -156,11 +156,10 @@ export default function InternshipDashboard() {
                     engine === "selenium"
                       ? "var(--success)"
                       : "var(--accent)",
-                  border: `1px solid ${
-                    engine === "selenium"
+                  border: `1px solid ${engine === "selenium"
                       ? "rgba(52, 211, 153, 0.15)"
                       : "rgba(129, 140, 248, 0.15)"
-                  }`,
+                    }`,
                 }}
               >
                 {engine}
@@ -342,15 +341,7 @@ export default function InternshipDashboard() {
         {/* ── Idle State ───────────────────────────── */}
         {status === "idle" && (
           <div className="flex flex-col items-center justify-center py-24 animate-fade-in-up">
-            <div
-              className="w-20 h-20 rounded-3xl flex items-center justify-center text-3xl mb-6"
-              style={{
-                background: "var(--accent-dim)",
-                border: "1px solid rgba(129, 140, 248, 0.1)",
-              }}
-            >
-              🚀
-            </div>
+
             <p
               className="text-lg font-semibold tracking-tight"
               style={{ color: "var(--foreground)" }}

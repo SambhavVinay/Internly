@@ -30,7 +30,6 @@ const JOB_TYPE_OPTIONS = [
   { value: "internship", label: "Internship" },
   { value: "full_time",  label: "Full-time" },
 ];
-
 const FRESHNESS_OPTIONS = [
   { value: "r3600",    label: "Past 1 hour" },
   { value: "r86400",   label: "Past 24 hours" },
@@ -43,14 +42,6 @@ export default function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
   const [workTypes, setWorkTypes] = useState<string[]>([]);
   const [jobTypes, setJobTypes] = useState<string[]>([]);
   const [freshness, setFreshness] = useState("r86400");
-
-  const toggleMulti = (
-    arr: string[],
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-    val: string
-  ) => {
-    setter(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +57,6 @@ export default function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
   const activeFilterCount = [workTypes.length > 0, jobTypes.length > 0].filter(
     Boolean
   ).length;
-
   return (
     <form onSubmit={handleSubmit} className="animate-fade-in-up">
       <div
@@ -233,6 +223,7 @@ export default function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
             </span>
           )}
         </div>
+
       </div>
     </form>
   );
@@ -259,7 +250,6 @@ function FilterGroup({
     </div>
   );
 }
-
 function ChipToggle({
   label,
   active,
@@ -288,4 +278,16 @@ function ChipToggle({
       {label}
     </button>
   );
+}
+
+function toggleMulti(
+  current: string[],
+  setter: (val: string[]) => void,
+  value: string
+) {
+  if (current.includes(value)) {
+    setter(current.filter((x) => x !== value));
+  } else {
+    setter([...current, value]);
+  }
 }

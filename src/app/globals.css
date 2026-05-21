@@ -1,30 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #06060a;
-  --foreground: #e4e4e7;
-  --card: #0c0c12;
-  --card-border: rgba(255, 255, 255, 0.06);
-  --card-hover: rgba(255, 255, 255, 0.03);
-  --accent: #818cf8;
-  --accent-dim: rgba(129, 140, 248, 0.12);
-  --accent-glow: rgba(129, 140, 248, 0.25);
-  --muted: #71717a;
-  --success: #34d399;
-  --error: #f87171;
-  --warning: #fbbf24;
-  --surface-1: #111118;
-  --surface-2: #18181f;
-  --radius: 14px;
-  --radius-sm: 8px;
-  --radius-lg: 20px;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-border: rgba(15, 23, 42, 0.08);
+  --card-hover: rgba(79, 70, 229, 0.04);
+  --accent: #4f46e5;
+  --accent-dim: rgba(79, 70, 229, 0.08);
+  --accent-glow: rgba(79, 70, 229, 0.15);
+  --muted: #475569;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --surface-1: #f1f5f9;
+  --surface-2: #e2e8f0;
+  --header-bg: rgba(255, 255, 255, 0.85);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-lg: 24px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
+}
+
+html {
+  font-size: 17.5px; /* Scaled up for high visibility and readability */
 }
 
 * {
@@ -32,34 +38,41 @@
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%),
+              radial-gradient(at 50% 0%, rgba(59, 130, 246, 0.03) 0px, transparent 50%),
+              var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  font-weight: 500; /* Makes text slightly bolder and more readable */
 }
 
 /* ── Scrollbar ─────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.12);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(15, 23, 42, 0.24);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 /* ── Animations ────────────────────────────────── */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -82,7 +95,7 @@ body {
     box-shadow: 0 0 0 0 var(--accent-glow);
   }
   50% {
-    box-shadow: 0 0 20px 4px var(--accent-glow);
+    box-shadow: 0 0 24px 6px var(--accent-glow);
   }
 }
 
@@ -95,7 +108,7 @@ body {
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-12px);
   }
   to {
     opacity: 1;
@@ -104,11 +117,11 @@ body {
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.5s ease-out both;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-slide-down {
-  animation: slideDown 0.35s ease-out both;
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .stagger-1 { animation-delay: 0.04s; }
