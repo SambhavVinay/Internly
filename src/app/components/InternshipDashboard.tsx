@@ -158,9 +158,19 @@ export default function InternshipDashboard() {
               setScrapeUrl(chunk.url || "");
               setTotal(chunk.total || 0);
               setElapsed(Math.round((Date.now() - startTime) / 1000));
+              // If partial results, show success with a note
+              if (chunk.partial && jobs.length > 0) {
+                setErrorMsg(`Got ${jobs.length} jobs but stream was interrupted: ${chunk.error || "connection lost"}`);
+              }
               setStatus("success");
             } else if (chunk.type === "error") {
-              throw new Error(chunk.message || "Scraping failed");
+              // If we have accumulated jobs, show them as partial success instead of full error
+              if (jobs.length > 0) {
+                setErrorMsg(`Got ${jobs.length} jobs before scraping failed: ${chunk.message || "Scraping failed"}`);
+                setStatus("success");
+              } else {
+                throw new Error(chunk.message || "Scraping failed");
+              }
             }
           } catch (e) {
             console.error("Failed to parse stream line:", e);
