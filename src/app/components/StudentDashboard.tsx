@@ -40,18 +40,27 @@ export default function StudentDashboard() {
   const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
 
   // Every unique school name across every timeframe in the current payload,
-  // sorted alphabetically. Drives the filter dropdown options.
-  const allSchools = useMemo(() => {
-    if (!data) return [] as string[];
-    const set = new Set<string>();
+  // sorted alphabetically, along with counts. Drives the filter dropdown options.
+  const { allSchools, schoolCounts, totalJobs } = useMemo(() => {
+    if (!data) return { allSchools: [], schoolCounts: {}, totalJobs: 0 };
+    const counts: Record<string, number> = {};
+    let total = 0;
+    
     for (const id of TIMEFRAME_IDS) {
-      for (const job of data[id]?.jobs ?? []) {
+      const jobs = data[id]?.jobs ?? [];
+      total += jobs.length;
+      for (const job of jobs) {
         for (const s of job.schools ?? []) {
-          if (s) set.add(s);
+          if (s) counts[s] = (counts[s] || 0) + 1;
         }
       }
     }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    
+    return {
+      allSchools: Object.keys(counts).sort((a, b) => a.localeCompare(b)),
+      schoolCounts: counts,
+      totalJobs: total,
+    };
   }, [data]);
 
   // Data with each timeframe's job list narrowed to jobs that match at
@@ -222,8 +231,8 @@ export default function StudentDashboard() {
       {/* ── Main Content ────────────────────────────── */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
         {/* Controls row: last-updated timestamp + school filter */}
-        {data && !loading && (
-          <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
+        {data && (
+          <div className={`mb-6 flex items-center justify-between gap-3 flex-wrap transition-opacity duration-300 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
             <p className="text-sm" style={{ color: "var(--muted)" }}>
               {lastUpdated
                 ? `Last updated: ${formatLastUpdated(lastUpdated)}`
@@ -233,6 +242,8 @@ export default function StudentDashboard() {
               schools={allSchools}
               selected={selectedSchools}
               onChange={setSelectedSchools}
+              counts={schoolCounts}
+              totalJobs={totalJobs}
             />
           </div>
         )}
@@ -272,8 +283,8 @@ export default function StudentDashboard() {
         )}
 
         {/* Content Sections */}
-        {filteredData && !loading && (
-          <div className="space-y-12">
+        {filteredData && (
+          <div className={`space-y-12 transition-all duration-500 ${loading ? "animate-progress-pulse pointer-events-none" : ""}`}>
             {[
               {
                 id: "1_hour" as const,
@@ -391,11 +402,11 @@ export default function StudentDashboard() {
         )}
 
         {/* Empty State - No data, or filter excluded everything */}
-        {filteredData && !loading &&
+        {filteredData &&
           TIMEFRAME_IDS.every(
             (id) => (filteredData[id]?.count || 0) === 0,
           ) && (
-          <div className="flex flex-col items-center justify-center py-20 animate-fade-in-up">
+          <div className={`flex flex-col items-center justify-center py-20 animate-fade-in-up transition-opacity duration-500 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
             <div
               className="w-16 h-16 rounded-xl flex items-center justify-center mb-6"
               style={{
