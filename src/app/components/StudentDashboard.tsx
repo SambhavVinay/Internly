@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import AccountButton from "./AccountButton";
 import JobCard from "./JobCard";
+import StudentSchoolFilter from "./StudentSchoolFilter";
 import ThemeToggle from "./ThemeToggle";
 import type { Job } from "./InternshipDashboard";
 
@@ -21,11 +23,71 @@ interface StudentDashboardData {
   "1_month": TimeframeData;
 }
 
+const TIMEFRAME_IDS = [
+  "1_hour",
+  "2_hours",
+  "5_hours",
+  "24_hours",
+  "1_week",
+  "1_month",
+] as const satisfies readonly (keyof StudentDashboardData)[];
+
 export default function StudentDashboard() {
   const [data, setData] = useState<StudentDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
+
+  // Every unique school name across every timeframe in the current payload,
+  // sorted alphabetically. Drives the filter dropdown options.
+  const allSchools = useMemo(() => {
+    if (!data) return [] as string[];
+    const set = new Set<string>();
+    for (const id of TIMEFRAME_IDS) {
+      for (const job of data[id]?.jobs ?? []) {
+        for (const s of job.schools ?? []) {
+          if (s) set.add(s);
+        }
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [data]);
+
+  // Data with each timeframe's job list narrowed to jobs that match at
+  // least one of the selected schools. When nothing is selected we return
+  // the original data untouched so there's no unnecessary work.
+  const filteredData = useMemo<StudentDashboardData | null>(() => {
+    if (!data) return null;
+    if (selectedSchools.length === 0) return data;
+    const selSet = new Set(selectedSchools);
+    const filterTimeframe = (tf: TimeframeData): TimeframeData => {
+      const jobs = (tf?.jobs ?? []).filter((j) =>
+        (j.schools ?? []).some((s) => selSet.has(s)),
+      );
+      return { jobs, count: jobs.length };
+    };
+    return {
+      "1_hour": filterTimeframe(data["1_hour"]),
+      "2_hours": filterTimeframe(data["2_hours"]),
+      "5_hours": filterTimeframe(data["5_hours"]),
+      "24_hours": filterTimeframe(data["24_hours"]),
+      "1_week": filterTimeframe(data["1_week"]),
+      "1_month": filterTimeframe(data["1_month"]),
+    };
+  }, [data, selectedSchools]);
+
+  // Drop any selected schools that disappeared after a refresh so the
+  // pill count stays accurate and the filter button doesn't show stale
+  // entries the user can no longer un-select.
+  useEffect(() => {
+    if (selectedSchools.length === 0) return;
+    const available = new Set(allSchools);
+    const pruned = selectedSchools.filter((s) => available.has(s));
+    if (pruned.length !== selectedSchools.length) {
+      setSelectedSchools(pruned);
+    }
+  }, [allSchools, selectedSchools]);
 
   const fetchData = async () => {
     try {
@@ -102,40 +164,6 @@ export default function StudentDashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Back to Admin Button */}
-            <a
-              href="/"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200"
-              style={{
-                background: "var(--surface-1)",
-                color: "var(--muted)",
-                border: "2px solid var(--card-border)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--accent-dim)";
-                e.currentTarget.style.color = "var(--accent)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "var(--surface-1)";
-                e.currentTarget.style.color = "var(--muted)";
-              }}
-            >
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                />
-              </svg>
-              Admin Panel
-            </a>
-
             {/* Refresh Button */}
             <button
               onClick={fetchData}
@@ -184,18 +212,28 @@ export default function StudentDashboard() {
 
             {/* Theme Toggle */}
             <ThemeToggle />
+
+            {/* Account avatar — opens the account-details modal */}
+            <AccountButton />
           </div>
         </div>
       </header>
 
       {/* ── Main Content ────────────────────────────── */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
-        {/* Last Updated Info */}
-        {lastUpdated && !loading && (
-          <div className="mb-6 text-center">
+        {/* Controls row: last-updated timestamp + school filter */}
+        {data && !loading && (
+          <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
             <p className="text-sm" style={{ color: "var(--muted)" }}>
-              Last updated: {formatLastUpdated(lastUpdated)}
+              {lastUpdated
+                ? `Last updated: ${formatLastUpdated(lastUpdated)}`
+                : ""}
             </p>
+            <StudentSchoolFilter
+              schools={allSchools}
+              selected={selectedSchools}
+              onChange={setSelectedSchools}
+            />
           </div>
         )}
 
@@ -234,7 +272,7 @@ export default function StudentDashboard() {
         )}
 
         {/* Content Sections */}
-        {data && !loading && (
+        {filteredData && !loading && (
           <div className="space-y-12">
             {[
               {
@@ -308,14 +346,14 @@ export default function StudentDashboard() {
                       {section.title}
                     </h2>
                     <p className="text-sm" style={{ color: "var(--muted)" }}>
-                      {section.desc(data[section.id]?.count || 0)}
+                      {section.desc(filteredData[section.id]?.count || 0)}
                     </p>
                   </div>
                 </div>
 
-                {(data[section.id]?.jobs || []).length > 0 ? (
+                {(filteredData[section.id]?.jobs || []).length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {(data[section.id]?.jobs || []).map((job, i) => (
+                    {(filteredData[section.id]?.jobs || []).map((job, i) => (
                       <JobCard key={`${section.id}-${i}`} job={job} index={i} />
                     ))}
                   </div>
@@ -352,14 +390,11 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Empty State - No Data */}
-        {data && !loading && 
-          (data["1_hour"]?.count || 0) === 0 && 
-          (data["2_hours"]?.count || 0) === 0 && 
-          (data["5_hours"]?.count || 0) === 0 && 
-          (data["24_hours"]?.count || 0) === 0 && 
-          (data["1_week"]?.count || 0) === 0 && 
-          (data["1_month"]?.count || 0) === 0 && (
+        {/* Empty State - No data, or filter excluded everything */}
+        {filteredData && !loading &&
+          TIMEFRAME_IDS.every(
+            (id) => (filteredData[id]?.count || 0) === 0,
+          ) && (
           <div className="flex flex-col items-center justify-center py-20 animate-fade-in-up">
             <div
               className="w-16 h-16 rounded-xl flex items-center justify-center mb-6"
@@ -387,15 +422,32 @@ export default function StudentDashboard() {
               className="text-xl font-bold tracking-tight"
               style={{ color: "var(--foreground)" }}
             >
-              No Opportunities Yet
+              {selectedSchools.length > 0
+                ? "No Matches for Selected Schools"
+                : "No Opportunities Yet"}
             </p>
             <p
               className="text-sm mt-2 max-w-md text-center leading-relaxed"
               style={{ color: "var(--muted)" }}
             >
-              Opportunities will appear here as they are discovered through the admin panel.
-              Check back later or ask an admin to run a search.
+              {selectedSchools.length > 0
+                ? "None of the loaded opportunities are tagged for the schools you picked. Try removing a filter or check back after the next scrape."
+                : "Opportunities will appear here as they are discovered through the admin panel. Check back later or ask an admin to run a search."}
             </p>
+            {selectedSchools.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedSchools([])}
+                className="mt-6 px-4 py-2 rounded-lg text-xs font-bold transition-colors"
+                style={{
+                  background: "var(--accent-dim)",
+                  color: "var(--accent)",
+                  border: "2px solid var(--accent)",
+                }}
+              >
+                Clear school filter
+              </button>
+            )}
           </div>
         )}
       </main>
