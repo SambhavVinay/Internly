@@ -33,22 +33,22 @@
 
 /* ── Dark Mode ───────────────────────────────────── */
 .dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-border: #334155;
-  --card-hover: #334155;
+  --background: #18181b;
+  --foreground: #f4f4f5;
+  --card: #27272a;
+  --card-border: #3f3f46;
+  --card-hover: #3f3f46;
   --accent: #a78bfa;
   --accent-light: #c4b5fd;
   --accent-dim: rgba(167, 139, 250, 0.15);
   --accent-glow: rgba(167, 139, 250, 0.3);
-  --muted: #94a3b8;
+  --muted: #a1a1aa;
   --success: #34d399;
   --error: #f87171;
   --warning: #fbbf24;
-  --surface-1: #1e293b;
-  --surface-2: #334155;
-  --header-bg: #0f172a;
+  --surface-1: #27272a;
+  --surface-2: #3f3f46;
+  --header-bg: #18181b;
   --shadow-color: #000000;
   --overlay-bg: rgba(0, 0, 0, 0.8);
 }
