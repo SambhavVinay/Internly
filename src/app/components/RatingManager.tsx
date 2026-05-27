@@ -85,7 +85,7 @@ export default function RatingManager() {
       </h1>
 
       {/* Set New Rating */}
-      <div 
+      {/* <div 
         className="neo-card p-6 mb-6"
         style={{ background: "var(--surface-0)" }}
       >
@@ -160,10 +160,10 @@ export default function RatingManager() {
             {message}
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Current Ratings */}
-      <div 
+      <div
         className="neo-card p-6"
         style={{ background: "var(--surface-0)" }}
       >
@@ -203,8 +203,8 @@ export default function RatingManager() {
                   }}
                 >
                   <div className="flex items-center justify-between">
-                    <span 
-                      className="font-medium truncate mr-2" 
+                    <span
+                      className="font-medium truncate mr-2"
                       style={{ color: "var(--foreground)" }}
                       title={company}
                     >
@@ -224,8 +224,8 @@ export default function RatingManager() {
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                         </svg>
                       ))}
-                      <span 
-                        className="text-xs font-bold ml-1" 
+                      <span
+                        className="text-xs font-bold ml-1"
                         style={{ color: "var(--accent)" }}
                       >
                         {rating.toFixed(1)}

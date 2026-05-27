@@ -51,7 +51,7 @@ export default function StudentDashboard() {
     if (!data) return { allSchools: [], schoolCounts: {}, totalJobs: 0 };
     const counts: Record<string, number> = {};
     let total = 0;
-    
+
     for (const id of TIMEFRAME_IDS) {
       const jobs = data[id]?.jobs ?? [];
       total += jobs.length;
@@ -61,7 +61,7 @@ export default function StudentDashboard() {
         }
       }
     }
-    
+
     return {
       allSchools: Object.keys(counts).sort((a, b) => a.localeCompare(b)),
       schoolCounts: counts,
@@ -223,12 +223,12 @@ export default function StudentDashboard() {
               title="Manage company ratings"
             >
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
               Ratings
             </a>
 
-            {/* Rate Companies Button — visible only when data is loaded */}
+            {/* Rate Companies Button — visible only when data is loaded
             {data && (
               <button
                 id="rate-companies-btn"
@@ -255,7 +255,7 @@ export default function StudentDashboard() {
                 )}
                 {ratingsLoading ? "Rating..." : Object.keys(companyRatings).length > 0 ? "Re-Rate" : "Rate Companies"}
               </button>
-            )}
+            )} */}
 
             {/* Refresh Button */}
             <button
@@ -424,12 +424,12 @@ export default function StudentDashboard() {
                   >
                     {section.isRecent ? (
                       <svg className="w-4 h-4" fill="var(--accent)" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                       </svg>
                     ) : (
                       <svg className="w-4 h-4" fill="var(--muted)" viewBox="0 0 24 24">
-                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-                        <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
+                        <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
                       </svg>
                     )}
                   </div>
@@ -499,61 +499,61 @@ export default function StudentDashboard() {
           TIMEFRAME_IDS.every(
             (id) => (filteredData[id]?.count || 0) === 0,
           ) && (
-          <div className={`flex flex-col items-center justify-center py-20 animate-fade-in-up transition-opacity duration-500 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
-            <div
-              className="w-16 h-16 rounded-xl flex items-center justify-center mb-6"
-              style={{
-                background: "var(--surface-1)",
-                border: "2px solid var(--card-border)",
-              }}
-            >
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--muted)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </div>
-
-            <p
-              className="text-xl font-bold tracking-tight"
-              style={{ color: "var(--foreground)" }}
-            >
-              {selectedSchools.length > 0
-                ? "No Matches for Selected Schools"
-                : "No Opportunities Yet"}
-            </p>
-            <p
-              className="text-sm mt-2 max-w-md text-center leading-relaxed"
-              style={{ color: "var(--muted)" }}
-            >
-              {selectedSchools.length > 0
-                ? "None of the loaded opportunities are tagged for the schools you picked. Try removing a filter or check back after the next scrape."
-                : "Opportunities will appear here as they are discovered through the admin panel. Check back later or ask an admin to run a search."}
-            </p>
-            {selectedSchools.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSelectedSchools([])}
-                className="mt-6 px-4 py-2 rounded-lg text-xs font-bold transition-colors"
+            <div className={`flex flex-col items-center justify-center py-20 animate-fade-in-up transition-opacity duration-500 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}>
+              <div
+                className="w-16 h-16 rounded-xl flex items-center justify-center mb-6"
                 style={{
-                  background: "var(--accent-dim)",
-                  color: "var(--accent)",
-                  border: "2px solid var(--accent)",
+                  background: "var(--surface-1)",
+                  border: "2px solid var(--card-border)",
                 }}
               >
-                Clear school filter
-              </button>
-            )}
-          </div>
-        )}
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--muted)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </div>
+
+              <p
+                className="text-xl font-bold tracking-tight"
+                style={{ color: "var(--foreground)" }}
+              >
+                {selectedSchools.length > 0
+                  ? "No Matches for Selected Schools"
+                  : "No Opportunities Yet"}
+              </p>
+              <p
+                className="text-sm mt-2 max-w-md text-center leading-relaxed"
+                style={{ color: "var(--muted)" }}
+              >
+                {selectedSchools.length > 0
+                  ? "None of the loaded opportunities are tagged for the schools you picked. Try removing a filter or check back after the next scrape."
+                  : "Opportunities will appear here as they are discovered through the admin panel. Check back later or ask an admin to run a search."}
+              </p>
+              {selectedSchools.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedSchools([])}
+                  className="mt-6 px-4 py-2 rounded-lg text-xs font-bold transition-colors"
+                  style={{
+                    background: "var(--accent-dim)",
+                    color: "var(--accent)",
+                    border: "2px solid var(--accent)",
+                  }}
+                >
+                  Clear school filter
+                </button>
+              )}
+            </div>
+          )}
       </main>
     </div>
   );

@@ -251,7 +251,7 @@ export default function InternshipDashboard() {
     setTotalSearches(0);
     setDeduplicatedCount(0);
     setStatusMessages(["Reconnecting to active search..."]);
-    
+
     const startTime = Date.now();
     try {
       const res = await fetch(`${API_BASE}/scrape-internships/stream`);
@@ -398,11 +398,10 @@ export default function InternshipDashboard() {
               background: ratingsError
                 ? "rgba(239,68,68,0.08)"
                 : ratingsLoading
-                ? "rgba(217,119,6,0.08)"
-                : "rgba(251,191,36,0.10)",
-              border: `2px solid ${
-                ratingsError ? "var(--error)" : ratingsLoading ? "var(--warning)" : "#f59e0b"
-              }`,
+                  ? "rgba(217,119,6,0.08)"
+                  : "rgba(251,191,36,0.10)",
+              border: `2px solid ${ratingsError ? "var(--error)" : ratingsLoading ? "var(--warning)" : "#f59e0b"
+                }`,
             }}
           >
             {ratingsLoading ? (
@@ -415,7 +414,7 @@ export default function InternshipDashboard() {
               </svg>
             ) : (
               <svg className="w-4 h-4 shrink-0" fill="#f59e0b" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
             )}
             <div className="flex-1 min-w-0">
@@ -423,8 +422,8 @@ export default function InternshipDashboard() {
                 {ratingsLoading
                   ? "Rating companies with AI…"
                   : ratingsError
-                  ? `Rating error: ${ratingsError}`
-                  : `Companies rated by AI ✓`}
+                    ? `Rating error: ${ratingsError}`
+                    : `Companies rated by AI ✓`}
               </p>
               {!ratingsLoading && !ratingsError && ratingsElapsed !== null && (
                 <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
