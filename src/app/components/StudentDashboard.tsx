@@ -7,12 +7,12 @@ import StudentSchoolFilter from "./StudentSchoolFilter";
 import ThemeToggle from "./ThemeToggle";
 import type { Job } from "./InternshipDashboard";
 
-const API_BASE =
+// Python scraper backend — used for /rate-companies and similar calls
+const SCRAPER_API =
   typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:8000"
     : process.env.NEXT_PUBLIC_API_URL ||
       "https://oh-internscrapper-oppurtunityhub.hf.space";
-const LOCAL_API = API_BASE;
 
 interface TimeframeData {
   jobs: Job[];
@@ -122,7 +122,7 @@ export default function StudentDashboard() {
     setRatingsLoading(true);
     setRatingsError("");
     try {
-      const response = await fetch(`${LOCAL_API}/rate-companies`, {
+      const response = await fetch(`${SCRAPER_API}/rate-companies`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ companies: Array.from(companySet) }),
@@ -143,7 +143,9 @@ export default function StudentDashboard() {
     try {
       setLoading(true);
       const response = await fetch(
-        `${API_BASE}/student/jobs/all-timeframes?t=${Date.now()}`,
+        // Always use the same-origin Next.js API route so it works on Vercel
+        // (reads from Neon DB directly without going through the HF scraper)
+        `/api/student/jobs/all-timeframes?t=${Date.now()}`,
         {
           headers: {
             "Cache-Control": "no-cache",
