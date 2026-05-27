@@ -51,6 +51,18 @@ export default function InternshipDashboard() {
   const [ratingsElapsed, setRatingsElapsed] = useState<number | null>(null);
   const [ratingsError, setRatingsError] = useState("");
 
+  // Auto-scrape sweep state
+  type SweepStatus = "idle" | "running" | "done" | "error";
+  const [sweepStatus, setSweepStatus] = useState<SweepStatus>("idle");
+  const [sweepState, setSweepState] = useState<{
+    current_school: string | null;
+    completed: { school: string; jobs: number }[];
+    failed: { school: string; error: string }[];
+    progress: string;
+    elapsed_seconds?: number;
+  } | null>(null);
+  const sweepPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Keep a ref to the live jobs list so the done-handler can read it without
   // a stale closure (jobs state updates are async).
   const jobsRef = useRef<Job[]>([]);
@@ -85,6 +97,54 @@ export default function InternshipDashboard() {
       setRatingsLoading(false);
     }
   }, []);
+
+  // ── Auto-scrape sweep ───────────────────────────────────────────────────
+  const stopSweepPoll = useCallback(() => {
+    if (sweepPollRef.current) {
+      clearInterval(sweepPollRef.current);
+      sweepPollRef.current = null;
+    }
+  }, []);
+
+  const pollSweepStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/scrape-status`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setSweepState(data);
+      if (!data.is_running) {
+        setSweepStatus(data.failed?.length > 0 && data.completed?.length === 0 ? "error" : "done");
+        stopSweepPoll();
+      }
+    } catch {
+      // silently ignore poll errors
+    }
+  }, [stopSweepPoll]);
+
+  const triggerAutoScrape = useCallback(async () => {
+    try {
+      setSweepStatus("running");
+      setSweepState(null);
+      const res = await fetch(`${API_BASE}/admin/trigger-scrape`, { method: "POST" });
+      const data = await res.json();
+      if (data.status === "already_running") {
+        // Already running — just start polling
+      }
+      // Poll every 3 seconds
+      stopSweepPoll();
+      sweepPollRef.current = setInterval(pollSweepStatus, 3000);
+      // Immediate first poll
+      await pollSweepStatus();
+    } catch (err) {
+      setSweepStatus("error");
+      console.error("Failed to trigger auto-scrape", err);
+    }
+  }, [pollSweepStatus, stopSweepPoll]);
+
+  // Clean up poll on unmount
+  useEffect(() => () => stopSweepPoll(), [stopSweepPoll]);
+
+  const TOTAL_SCHOOLS = 8; // matches _AUTO_SCRAPE_SCHOOLS length in main.py
 
   const [schools, setSchools] = useState<SchoolsData>({});
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
@@ -347,6 +407,67 @@ export default function InternshipDashboard() {
               Student Dashboard
             </a>
 
+            {/* Auto-Scrape Schools Button */}
+            <button
+              id="auto-scrape-btn"
+              onClick={triggerAutoScrape}
+              disabled={sweepStatus === "running"}
+              title={sweepStatus === "running" ? "Sweep in progress…" : "Scrape all 8 schools now"}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200"
+              style={{
+                background:
+                  sweepStatus === "running"
+                    ? "rgba(217,119,6,0.10)"
+                    : sweepStatus === "done"
+                    ? "rgba(5,150,105,0.10)"
+                    : sweepStatus === "error"
+                    ? "rgba(239,68,68,0.10)"
+                    : "var(--surface-1)",
+                color:
+                  sweepStatus === "running"
+                    ? "var(--warning)"
+                    : sweepStatus === "done"
+                    ? "var(--success)"
+                    : sweepStatus === "error"
+                    ? "var(--error)"
+                    : "var(--foreground)",
+                border: `2px solid ${
+                  sweepStatus === "running"
+                    ? "var(--warning)"
+                    : sweepStatus === "done"
+                    ? "var(--success)"
+                    : sweepStatus === "error"
+                    ? "var(--error)"
+                    : "var(--card-border)"
+                }`,
+                cursor: sweepStatus === "running" ? "not-allowed" : "pointer",
+                opacity: sweepStatus === "running" ? 0.8 : 1,
+              }}
+            >
+              {sweepStatus === "running" ? (
+                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              ) : sweepStatus === "done" ? (
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
+              {sweepStatus === "running"
+                ? sweepState?.current_school
+                  ? `Scraping ${sweepState.current_school}…`
+                  : "Starting…"
+                : sweepStatus === "done"
+                ? "Sweep done ✓"
+                : sweepStatus === "error"
+                ? "Sweep failed"
+                : "Auto-Scrape Schools"}
+            </button>
+
             {/* Status pill */}
             <div
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold"
@@ -378,6 +499,124 @@ export default function InternshipDashboard() {
       <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-8">
         {/* Search Form */}
         <SearchForm onSubmit={handleScrape} isLoading={status === "loading"} />
+
+        {/* ── Auto-Scrape Progress Panel ───────────────────────────────────── */}
+        {(sweepStatus === "running" || sweepStatus === "done" || sweepStatus === "error") && (
+          <div
+            className="mt-5 p-4 rounded-xl animate-fade-in-up"
+            style={{
+              background:
+                sweepStatus === "error"
+                  ? "rgba(239,68,68,0.06)"
+                  : sweepStatus === "done"
+                  ? "rgba(5,150,105,0.06)"
+                  : "rgba(217,119,6,0.06)",
+              border: `2px solid ${
+                sweepStatus === "error"
+                  ? "var(--error)"
+                  : sweepStatus === "done"
+                  ? "var(--success)"
+                  : "var(--warning)"
+              }`,
+            }}
+          >
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                {sweepStatus === "running" && (
+                  <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" stroke="var(--warning)" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                )}
+                <p
+                  className="text-sm font-bold"
+                  style={{
+                    color:
+                      sweepStatus === "error"
+                        ? "var(--error)"
+                        : sweepStatus === "done"
+                        ? "var(--success)"
+                        : "var(--warning)",
+                  }}
+                >
+                  {sweepStatus === "running"
+                    ? `Sweeping schools… ${sweepState?.progress ?? "0/8"}`
+                    : sweepStatus === "done"
+                    ? `Sweep complete — ${sweepState?.progress ?? "8/8"} schools processed`
+                    : "Sweep encountered errors"}
+                </p>
+              </div>
+              {sweepState?.elapsed_seconds !== undefined && (
+                <span className="text-xs" style={{ color: "var(--muted)" }}>
+                  {sweepState.elapsed_seconds}s elapsed
+                </span>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {sweepState && (
+              <div
+                className="h-1.5 rounded-full mb-3 overflow-hidden"
+                style={{ background: "var(--card-border)" }}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${Math.round(
+                      ((sweepState.completed.length + sweepState.failed.length) / TOTAL_SCHOOLS) * 100
+                    )}%`,
+                    background:
+                      sweepStatus === "done" ? "var(--success)" : "var(--warning)",
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Per-school chips */}
+            {sweepState && (
+              <div className="flex flex-wrap gap-1.5">
+                {sweepState.completed.map(({ school, jobs }) => (
+                  <span
+                    key={school}
+                    className="px-2 py-0.5 rounded text-xs font-semibold"
+                    style={{
+                      background: "rgba(5,150,105,0.12)",
+                      color: "var(--success)",
+                      border: "1px solid var(--success)",
+                    }}
+                  >
+                    {school} · {jobs} jobs
+                  </span>
+                ))}
+                {sweepState.failed.map(({ school }) => (
+                  <span
+                    key={school}
+                    className="px-2 py-0.5 rounded text-xs font-semibold"
+                    style={{
+                      background: "rgba(239,68,68,0.10)",
+                      color: "var(--error)",
+                      border: "1px solid var(--error)",
+                    }}
+                  >
+                    {school} ✕
+                  </span>
+                ))}
+                {sweepStatus === "running" && sweepState.current_school && (
+                  <span
+                    className="px-2 py-0.5 rounded text-xs font-semibold animate-breathe"
+                    style={{
+                      background: "rgba(217,119,6,0.12)",
+                      color: "var(--warning)",
+                      border: "1px solid var(--warning)",
+                    }}
+                  >
+                    {sweepState.current_school} ⟳
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Status Banner */}
         <StatusBanner
