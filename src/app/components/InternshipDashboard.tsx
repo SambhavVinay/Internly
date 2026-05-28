@@ -420,7 +420,7 @@ export default function InternshipDashboard() {
 
             {/* Auto Scrape Analytics Button */}
             <a
-              href={`${typeof window !== "undefined" ? window.location.pathname : ""}/auto-scrape`}
+              href="auto-scrape"
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200"
               style={{
                 background: "rgba(217,119,6,0.08)",
