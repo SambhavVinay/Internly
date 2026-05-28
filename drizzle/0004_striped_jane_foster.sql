@@ -1,0 +1,1 @@
+ALTER TABLE "scraped_jobs" ADD COLUMN "company_rating" real;

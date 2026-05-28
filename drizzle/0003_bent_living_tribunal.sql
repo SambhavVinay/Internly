@@ -1,0 +1,1 @@
+ALTER TABLE "scraped_jobs" DROP COLUMN "company_rating";
