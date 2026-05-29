@@ -668,7 +668,7 @@ export default function AutoScrapeAnalyticsPage() {
       >
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between">
           <p className="text-xs font-medium" style={{ color: "var(--muted)" }}>
-            OpportunityHub · Auto Scrape Analytics
+            Internly · Auto Scrape Analytics
           </p>
           <p className="text-xs font-mono" style={{ color: "var(--muted)" }}>
             Polling active · {history.length} run{history.length !== 1 ? "s" : ""} tracked

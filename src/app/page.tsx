@@ -26,7 +26,7 @@ function LoginCard() {
     // Tell the dashboard to auto-open the account modal once after this
     // OAuth round-trip lands the user back in the app.
     if (typeof window !== "undefined") {
-      window.sessionStorage.setItem("oh:show-account-modal", "1");
+      window.sessionStorage.setItem("internly:show-account-modal", "1");
     }
     const { error: err } = await signIn.social({
       provider: "google",
@@ -34,7 +34,7 @@ function LoginCard() {
     });
     if (err) {
       if (typeof window !== "undefined") {
-        window.sessionStorage.removeItem("oh:show-account-modal");
+        window.sessionStorage.removeItem("internly:show-account-modal");
       }
       setError(err.message ?? "Sign-in failed. Please try again.");
       setSubmitting(false);
@@ -60,13 +60,13 @@ function LoginCard() {
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          OH
+          IN
         </div>
         <h1
           className="text-2xl font-bold tracking-tight"
           style={{ color: "var(--foreground)" }}
         >
-          Sign in to OpportunityHub
+          Sign in to Internly
         </h1>
         <p
           className="text-sm mt-2 max-w-xs"
