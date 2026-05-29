@@ -375,7 +375,7 @@ export default function InternshipDashboard() {
                 className="text-base font-bold tracking-tight"
                 style={{ color: "var(--foreground)" }}
               >
-                OpportunityHub
+                Internly
               </h1>
               <p className="text-xs font-medium" style={{ color: "var(--muted)" }}>
                 Student Career Discovery
