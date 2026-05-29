@@ -8,6 +8,7 @@ import ThemeToggle from "./ThemeToggle";
 import type { Job } from "./InternshipDashboard";
 import AcademicNotice from "./AcademicNotice";
 import Footer from "./Footer";
+import Image from "next/image";
 
 // Python scraper backend — used for /rate-companies and similar calls
 const SCRAPER_API =
@@ -199,13 +200,15 @@ export default function StudentDashboard() {
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black"
               style={{
-                background: "var(--accent)",
                 color: "#ffffff",
-                border: "2px solid var(--card-border)",
-                boxShadow: "2px 2px 0 var(--shadow-color)",
               }}
             >
-              SD
+              <Image
+                src="/internly.jpeg"
+                alt="Internly Logo"
+                width={100}
+                height={100}
+              />
             </div>
             <div>
               <h1

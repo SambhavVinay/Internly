@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -50,17 +51,19 @@ function LoginCard() {
         boxShadow: "var(--shadow-brutal-lg)",
       }}
     >
-      <div className="flex flex-col items-center text-center mb-8">
+      <div className="flex flex-col items-center text-center mb-8 ">
         <div
-          className="w-14 h-14 rounded-xl flex items-center justify-center text-lg font-black mb-4"
+          className="w-17 h-17 rounded-xl flex items-center justify-center text-lg font-black mb-4"
           style={{
-            background: "var(--accent)",
             color: "#ffffff",
-            border: "2px solid var(--card-border)",
-            boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          IN
+          <Image
+            src="/internly.jpeg"
+            alt="Internly Logo"
+            width={100}
+            height={100}
+          />
         </div>
         <h1
           className="text-2xl font-bold tracking-tight"
@@ -68,10 +71,7 @@ function LoginCard() {
         >
           Sign in to Internly
         </h1>
-        <p
-          className="text-sm mt-2 max-w-xs"
-          style={{ color: "var(--muted)" }}
-        >
+        <p className="text-sm mt-2 max-w-xs" style={{ color: "var(--muted)" }}>
           Use your Google account to access the student dashboard and saved
           opportunities.
         </p>
@@ -106,12 +106,9 @@ function LoginCard() {
         </div>
       )}
 
-      <p
-        className="text-xs text-center mt-6"
-        style={{ color: "var(--muted)" }}
-      >
-        By continuing you agree that this is an academic research tool and
-        not a commercial job-board.
+      <p className="text-xs text-center mt-6" style={{ color: "var(--muted)" }}>
+        By continuing you agree that this is an academic research tool and not a
+        commercial job-board.
       </p>
     </div>
   );

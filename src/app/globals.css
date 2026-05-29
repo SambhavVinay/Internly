@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 /* ── Light Mode (default) ────────────────────────── */
@@ -57,8 +57,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
 /* ── Base ─────────────────────────────────────────── */
@@ -73,7 +73,11 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Plus Jakarta Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -103,9 +107,10 @@ body {
   border: var(--border-width) solid var(--card-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-brutal);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.2s ease;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease;
 }
 .neo-card:hover {
   transform: translate(-2px, -2px);
@@ -128,11 +133,12 @@ body {
   border: var(--border-width) solid var(--card-border);
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-brutal-sm);
-  transition: transform 0.1s ease,
-              box-shadow 0.1s ease,
-              background 0.15s ease,
-              color 0.15s ease,
-              border-color 0.15s ease;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
   cursor: pointer;
 }
 .neo-button:hover {
@@ -158,7 +164,9 @@ body {
   border-radius: var(--radius-sm);
   color: var(--foreground);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .neo-input:focus {
   border-color: var(--accent);
@@ -171,13 +179,19 @@ body {
 
 /* ── Dark Mode Glow & Premium Effects ──────────────── */
 .dark .neo-card:hover {
-  box-shadow: var(--shadow-brutal-lg), 0 0 25px var(--accent-dim);
+  box-shadow:
+    var(--shadow-brutal-lg),
+    0 0 25px var(--accent-dim);
 }
 .dark .neo-button:hover {
-  box-shadow: 3px 3px 0 var(--shadow-color), 0 0 15px var(--accent-dim);
+  box-shadow:
+    3px 3px 0 var(--shadow-color),
+    0 0 15px var(--accent-dim);
 }
 .dark .neo-input:focus {
-  box-shadow: 0 0 0 3px var(--accent-dim), 0 0 15px var(--accent-glow);
+  box-shadow:
+    0 0 0 3px var(--accent-dim),
+    0 0 15px var(--accent-glow);
 }
 
 .neo-chip {
@@ -235,7 +249,8 @@ body {
 }
 
 @keyframes breathe {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -246,7 +261,8 @@ body {
 }
 
 @keyframes progressPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.6;
   }
   50% {
@@ -266,8 +282,12 @@ body {
 }
 
 @keyframes overlayIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ── Animation Utility Classes ────────────────────── */
@@ -296,16 +316,36 @@ body {
 }
 
 /* ── Stagger Delays ───────────────────────────────── */
-.stagger-1 { animation-delay: 0.04s; }
-.stagger-2 { animation-delay: 0.08s; }
-.stagger-3 { animation-delay: 0.12s; }
-.stagger-4 { animation-delay: 0.16s; }
-.stagger-5 { animation-delay: 0.20s; }
-.stagger-6 { animation-delay: 0.24s; }
-.stagger-7 { animation-delay: 0.28s; }
-.stagger-8 { animation-delay: 0.32s; }
-.stagger-9 { animation-delay: 0.36s; }
-.stagger-10 { animation-delay: 0.40s; }
+.stagger-1 {
+  animation-delay: 0.04s;
+}
+.stagger-2 {
+  animation-delay: 0.08s;
+}
+.stagger-3 {
+  animation-delay: 0.12s;
+}
+.stagger-4 {
+  animation-delay: 0.16s;
+}
+.stagger-5 {
+  animation-delay: 0.2s;
+}
+.stagger-6 {
+  animation-delay: 0.24s;
+}
+.stagger-7 {
+  animation-delay: 0.28s;
+}
+.stagger-8 {
+  animation-delay: 0.32s;
+}
+.stagger-9 {
+  animation-delay: 0.36s;
+}
+.stagger-10 {
+  animation-delay: 0.4s;
+}
 
 /* ── Skeleton Loader ──────────────────────────────── */
 .skeleton {
