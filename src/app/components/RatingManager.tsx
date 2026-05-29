@@ -193,7 +193,9 @@ export default function RatingManager() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {Object.entries(ratings)
               .sort(([a], [b]) => a.localeCompare(b))
-              .map(([company, rating]) => (
+              .map(([company, rating]) => {
+                const starColor = rating > 4 ? "var(--success)" : rating >= 3 ? "var(--warning)" : "var(--error)";
+                return (
                 <div
                   key={company}
                   className="p-3 rounded-md border"
@@ -217,8 +219,8 @@ export default function RatingManager() {
                           key={star}
                           className="w-3 h-3"
                           viewBox="0 0 24 24"
-                          fill={rating >= star ? "var(--accent)" : "var(--card-border)"}
-                          stroke={rating >= star ? "var(--accent)" : "var(--card-border)"}
+                          fill={rating >= star ? starColor : "var(--card-border)"}
+                          stroke={rating >= star ? starColor : "var(--card-border)"}
                           strokeWidth="1"
                         >
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -226,14 +228,14 @@ export default function RatingManager() {
                       ))}
                       <span
                         className="text-xs font-bold ml-1"
-                        style={{ color: "var(--accent)" }}
+                        style={{ color: starColor }}
                       >
                         {rating.toFixed(1)}
                       </span>
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
           </div>
         )}
       </div>

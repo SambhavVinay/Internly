@@ -93,7 +93,7 @@ export default function Footer() {
 
           {/* ── Bottom Row: Links + Copyright ── */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4">
               <FooterLink
                 label="Terms & Conditions"
                 onClick={() => setActiveModal("terms")}
