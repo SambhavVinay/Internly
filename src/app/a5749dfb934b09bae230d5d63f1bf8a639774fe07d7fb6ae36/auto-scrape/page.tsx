@@ -1,14 +1,24 @@
 "use client";
-
+import Image from "next/image";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const API_BASE =
   typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:8000"
-    : (process.env.NEXT_PUBLIC_API_URL || "https://oh-internscrapper-oppurtunityhub.hf.space");
+    : process.env.NEXT_PUBLIC_API_URL ||
+      "https://oh-internscrapper-oppurtunityhub.hf.space";
 
 const TOTAL_SCHOOLS = 8;
-const ALL_SCHOOLS = ["socse", "sob", "sodi", "soepp", "solaw", "sofmca", "solas", "soahp"];
+const ALL_SCHOOLS = [
+  "socse",
+  "sob",
+  "sodi",
+  "soepp",
+  "solaw",
+  "sofmca",
+  "solas",
+  "soahp",
+];
 
 interface SweepEntry {
   sweep_id: number;
@@ -54,16 +64,19 @@ function SweepCard({ sweep }: { sweep: SweepEntry }) {
   const totalJobs = sweep.completed.reduce((sum, c) => sum + c.jobs, 0);
 
   const remaining = ALL_SCHOOLS.filter(
-    (s) => !completedSchools.has(s) && !failedSchools.has(s) && s !== sweep.current_school
+    (s) =>
+      !completedSchools.has(s) &&
+      !failedSchools.has(s) &&
+      s !== sweep.current_school,
   );
 
   const status = sweep.cancelled
     ? "cancelled"
     : sweep.is_running
-    ? "running"
-    : sweep.failed.length > 0 && sweep.completed.length === 0
-    ? "error"
-    : "done";
+      ? "running"
+      : sweep.failed.length > 0 && sweep.completed.length === 0
+        ? "error"
+        : "done";
 
   const statusConfig = {
     running: {
@@ -143,14 +156,21 @@ function SweepCard({ sweep }: { sweep: SweepEntry }) {
                 stroke="var(--success)"
                 strokeWidth={2.5}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
           ) : (
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
               style={{
-                background: status === "error" ? "rgba(239,68,68,0.12)" : "rgba(107,114,128,0.12)",
+                background:
+                  status === "error"
+                    ? "rgba(239,68,68,0.12)"
+                    : "rgba(107,114,128,0.12)",
                 border: `2px solid ${status === "error" ? "var(--error)" : "var(--muted)"}`,
               }}
             >
@@ -170,7 +190,10 @@ function SweepCard({ sweep }: { sweep: SweepEntry }) {
             </div>
           )}
           <div>
-            <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>
+            <p
+              className="text-sm font-bold"
+              style={{ color: "var(--foreground)" }}
+            >
               Sweep #{sweep.sweep_id}
               <span
                 className="font-mono ml-2 text-xs font-medium"
@@ -182,7 +205,10 @@ function SweepCard({ sweep }: { sweep: SweepEntry }) {
             <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
               {sweep.progress} schools processed
               {totalJobs > 0 && (
-                <span className="font-semibold ml-1" style={{ color: cfg.color }}>
+                <span
+                  className="font-semibold ml-1"
+                  style={{ color: cfg.color }}
+                >
                   · {totalJobs} jobs found
                 </span>
               )}
@@ -234,13 +260,14 @@ function SweepCard({ sweep }: { sweep: SweepEntry }) {
           className="h-full rounded-full"
           style={{
             width: `${progressPercent}%`,
-            background: status === "running"
-              ? "var(--warning)"
-              : status === "done"
-              ? "var(--success)"
-              : status === "error"
-              ? "var(--error)"
-              : "var(--muted)",
+            background:
+              status === "running"
+                ? "var(--warning)"
+                : status === "done"
+                  ? "var(--success)"
+                  : status === "error"
+                    ? "var(--error)"
+                    : "var(--muted)",
             transition: "width 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         />
@@ -259,8 +286,18 @@ function SweepCard({ sweep }: { sweep: SweepEntry }) {
               border: "1px solid var(--success)",
             }}
           >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             {school.toUpperCase()} · {jobs}
           </span>
@@ -277,8 +314,18 @@ function SweepCard({ sweep }: { sweep: SweepEntry }) {
               border: "1px solid var(--error)",
             }}
           >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
             {school.toUpperCase()} ✕
           </span>
@@ -294,8 +341,18 @@ function SweepCard({ sweep }: { sweep: SweepEntry }) {
               border: "1px solid var(--warning)",
             }}
           >
-            <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg
+              className="w-3 h-3 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
             </svg>
             {sweep.current_school.toUpperCase()} ⟳
           </span>
@@ -356,9 +413,11 @@ export default function AutoScrapeAnalyticsPage() {
   // Compute summary stats
   const totalJobs = history.reduce(
     (sum, s) => sum + s.completed.reduce((js, c) => js + c.jobs, 0),
-    0
+    0,
   );
-  const completedRuns = history.filter((s) => !s.is_running && !s.cancelled).length;
+  const completedRuns = history.filter(
+    (s) => !s.is_running && !s.cancelled,
+  ).length;
   const activeRun = history.find((s) => s.is_running);
 
   // Uptime — only counts while a sweep is actively running
@@ -400,20 +459,32 @@ export default function AutoScrapeAnalyticsPage() {
                 e.currentTarget.style.color = "var(--foreground)";
               }}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 19.5L8.25 12l7.5-7.5"
+                />
               </svg>
             </a>
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black"
               style={{
-                background: "var(--accent)",
                 color: "#ffffff",
-                border: "2px solid var(--card-border)",
-                boxShadow: "2px 2px 0 var(--shadow-color)",
               }}
             >
-              OH
+              <Image
+                src="/internly.jpeg"
+                alt="Internly Logo"
+                width={100}
+                height={100}
+              />
             </div>
             <div>
               <h1
@@ -422,7 +493,10 @@ export default function AutoScrapeAnalyticsPage() {
               >
                 Auto Scrape Analytics
               </h1>
-              <p className="text-xs font-medium" style={{ color: "var(--muted)" }}>
+              <p
+                className="text-xs font-medium"
+                style={{ color: "var(--muted)" }}
+              >
                 Hourly Sweep History & Progress
               </p>
             </div>
@@ -434,7 +508,9 @@ export default function AutoScrapeAnalyticsPage() {
               <button
                 onClick={async () => {
                   try {
-                    await fetch(`${API_BASE}/admin/stop-scrape`, { method: "POST" });
+                    await fetch(`${API_BASE}/admin/stop-scrape`, {
+                      method: "POST",
+                    });
                     // Immediately refresh history to reflect the stop
                     fetchHistory();
                   } catch (err) {
@@ -458,9 +534,23 @@ export default function AutoScrapeAnalyticsPage() {
                   e.currentTarget.style.color = "var(--error)";
                 }}
               >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+                  />
                 </svg>
                 Stop Auto-Scrape
               </button>
@@ -498,8 +588,18 @@ export default function AutoScrapeAnalyticsPage() {
               label: "Total Runs",
               value: totalRuns.toString(),
               icon: (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="var(--accent)" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="var(--accent)"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
               ),
               color: "var(--accent)",
@@ -508,8 +608,18 @@ export default function AutoScrapeAnalyticsPage() {
               label: "Completed",
               value: completedRuns.toString(),
               icon: (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="var(--success)" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="var(--success)"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               ),
               color: "var(--success)",
@@ -518,8 +628,18 @@ export default function AutoScrapeAnalyticsPage() {
               label: "Total Jobs Found",
               value: totalJobs.toLocaleString(),
               icon: (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="var(--warning)" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="var(--warning)"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z"
+                  />
                 </svg>
               ),
               color: "var(--warning)",
@@ -528,8 +648,18 @@ export default function AutoScrapeAnalyticsPage() {
               label: "Uptime",
               value: uptimeSeconds > 0 ? formatDuration(uptimeSeconds) : "—",
               icon: (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="var(--muted)" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="var(--muted)"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               ),
               color: "var(--muted)",
@@ -549,10 +679,16 @@ export default function AutoScrapeAnalyticsPage() {
                 {icon}
               </div>
               <div>
-                <p className="text-lg font-bold font-mono" style={{ color: "var(--foreground)" }}>
+                <p
+                  className="text-lg font-bold font-mono"
+                  style={{ color: "var(--foreground)" }}
+                >
                   {value}
                 </p>
-                <p className="text-xs font-medium" style={{ color: "var(--muted)" }}>
+                <p
+                  className="text-xs font-medium"
+                  style={{ color: "var(--muted)" }}
+                >
                   {label}
                 </p>
               </div>
@@ -635,8 +771,18 @@ export default function AutoScrapeAnalyticsPage() {
                 e.currentTarget.style.color = "var(--accent)";
               }}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 19.5L8.25 12l7.5-7.5"
+                />
               </svg>
               Go to Admin Dashboard
             </a>
@@ -650,7 +796,10 @@ export default function AutoScrapeAnalyticsPage() {
               >
                 Sweep History
               </h2>
-              <p className="text-xs font-mono" style={{ color: "var(--muted)" }}>
+              <p
+                className="text-xs font-mono"
+                style={{ color: "var(--muted)" }}
+              >
                 Auto-refreshing every 3s
               </p>
             </div>
@@ -671,7 +820,8 @@ export default function AutoScrapeAnalyticsPage() {
             Internly · Auto Scrape Analytics
           </p>
           <p className="text-xs font-mono" style={{ color: "var(--muted)" }}>
-            Polling active · {history.length} run{history.length !== 1 ? "s" : ""} tracked
+            Polling active · {history.length} run
+            {history.length !== 1 ? "s" : ""} tracked
           </p>
         </div>
       </footer>
