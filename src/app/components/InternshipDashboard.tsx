@@ -368,7 +368,7 @@ export default function InternshipDashboard() {
                 boxShadow: "2px 2px 0 var(--shadow-color)",
               }}
             >
-              IN
+              OH
             </div>
             <div>
               <h1

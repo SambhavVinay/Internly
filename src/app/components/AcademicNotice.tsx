@@ -68,9 +68,8 @@ export default function AcademicNotice() {
               This academic initiative indexes publicly available job
               opportunities for educational and student employability purposes.
               Applications are completed exclusively on the original hiring
-              platform, such as <strong>LinkedIn</strong>. All trademarks, 
-              content, and intellectual property remain the property of 
-              <strong>LinkedIn Corporation</strong> and other respective owners and publishers.
+              platform. All trademarks, content, and intellectual property
+              remain the property of their respective owners and publishers.
             </p>
           </div>
 

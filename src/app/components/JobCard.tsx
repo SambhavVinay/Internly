@@ -9,18 +9,13 @@ interface JobCardProps {
   rating?: number; // 1.0–5.0, shown as stars; omit for no stars
 }
 
-function getRatingColors(rating: number) {
-  if (rating >= 4) return { color: "var(--success)", bg: "rgba(5, 150, 105, 0.08)" };
-  if (rating >= 3) return { color: "var(--warning)", bg: "rgba(217, 119, 6, 0.08)" };
-  return { color: "var(--error)", bg: "rgba(239, 68, 68, 0.08)" };
-}
-
 // Renders up to 5 stars (filled / half / empty) for a 1–5 float rating.
-function StarRating({ rating, color }: { rating: number, color: string }) {
+function StarRating({ rating }: { rating: number }) {
+  const starColor = rating > 4 ? "var(--success)" : rating >= 3 ? "var(--warning)" : "var(--error)";
   const stars = [];
-  const halfId = `half-${rating.toString().replace('.', '-')}`;
   for (let i = 1; i <= 5; i++) {
     const fill = rating >= i ? 1 : rating >= i - 0.5 ? 0.5 : 0;
+    const gradientId = `half-${rating.toString().replace('.', '-')}-${i}`;
     stars.push(
       <svg
         key={i}
@@ -33,16 +28,16 @@ function StarRating({ rating, color }: { rating: number, color: string }) {
         {/* Empty star background */}
         <path
           d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-          fill={fill === 0 ? "var(--card-border)" : fill === 1 ? color : `url(#${halfId})`}
-          stroke={fill === 0 ? "var(--card-border)" : color}
+          fill={fill === 0 ? "var(--card-border)" : fill === 1 ? starColor : `url(#${gradientId})`}
+          stroke={fill === 0 ? "var(--card-border)" : starColor}
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         {fill === 0.5 && (
           <defs>
-            <linearGradient id={halfId}>
-              <stop offset="50%" stopColor={color} />
+            <linearGradient id={gradientId}>
+              <stop offset="50%" stopColor={starColor} />
               <stop offset="50%" stopColor="var(--card-border)" />
             </linearGradient>
           </defs>
@@ -53,7 +48,7 @@ function StarRating({ rating, color }: { rating: number, color: string }) {
   return (
     <div className="flex items-center gap-1">
       <div className="flex items-center gap-0.5">{stars}</div>
-      <span className="text-xs font-bold ml-1" style={{ color: color }}>
+      <span className="text-xs font-bold ml-1" style={{ color: starColor }}>
         {rating.toFixed(1)}
       </span>
       <span className="text-xs" style={{ color: "var(--muted)" }}>/ 5</span>
@@ -158,22 +153,19 @@ export default function JobCard({ job, index, rating }: JobCardProps) {
       </div>
 
       {/* Star Rating (LLM-generated, ephemeral) */}
-      {rating !== undefined && (() => {
-        const { color, bg } = getRatingColors(rating);
-        return (
-          <div
-            className="flex items-center gap-2 mb-2 px-2 py-1 rounded-md"
-            style={{
-              background: bg,
-              border: `1px solid ${color}`,
-              display: "inline-flex",
-              width: "fit-content",
-            }}
-          >
-            <StarRating rating={rating} color={color} />
-          </div>
-        );
-      })()}
+      {rating !== undefined && (
+        <div
+          className="flex items-center gap-2 mb-2 px-2 py-1 rounded-md"
+          style={{
+            background: rating > 4 ? "rgba(5, 150, 105, 0.08)" : rating >= 3 ? "rgba(217, 119, 6, 0.08)" : "rgba(239, 68, 68, 0.08)",
+            border: `1px solid ${rating > 4 ? "var(--success)" : rating >= 3 ? "var(--warning)" : "var(--error)"}`,
+            display: "inline-flex",
+            width: "fit-content",
+          }}
+        >
+          <StarRating rating={rating} />
+        </div>
+      )}
 
       {/* Location */}
       <div className="flex items-center gap-2 mb-3">

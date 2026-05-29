@@ -77,8 +77,8 @@ export default function Footer() {
               >
                 Opportunity information originates from publicly available
                 listings published by their respective platforms and
-                organizations, notably <strong>LinkedIn</strong>. We respectfully acknowledge and attribute all
-                content to <strong>LinkedIn Corporation</strong> and its original publishers.
+                organizations, notably LinkedIn. We respectfully acknowledge
+                and attribute all content to its original publishers.
               </p>
             </div>
           </div>

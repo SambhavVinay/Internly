@@ -590,7 +590,8 @@ export default function StudentDashboard() {
             </div>
           )}
       </main>
-      
+
+      {/* ── Footer ──────────────────────────────────── */}
       <Footer />
     </div>
   );
