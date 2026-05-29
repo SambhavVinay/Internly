@@ -207,7 +207,7 @@ export function AboutContent() {
   return (
     <div className="flex flex-col gap-6">
       <Section title="Our Mission">
-        OpportunityHub is a student-led academic initiative designed to help
+        Internly is a student-led academic initiative designed to help
         students discover employment opportunities more efficiently. Built
         by students, for students, our platform indexes publicly available
         career listings to support internship discovery and career

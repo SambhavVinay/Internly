@@ -6,6 +6,8 @@ import JobCard from "./JobCard";
 import StudentSchoolFilter from "./StudentSchoolFilter";
 import ThemeToggle from "./ThemeToggle";
 import type { Job } from "./InternshipDashboard";
+import AcademicNotice from "./AcademicNotice";
+import Footer from "./Footer";
 
 // Python scraper backend — used for /rate-companies and similar calls
 const SCRAPER_API =
@@ -307,6 +309,9 @@ export default function StudentDashboard() {
         </div>
       </header>
 
+      {/* ── Academic Notice ──────────────────────────── */}
+      <AcademicNotice />
+
       {/* ── Main Content ────────────────────────────── */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
         {/* Controls row: last-updated timestamp + school filter */}
@@ -585,6 +590,8 @@ export default function StudentDashboard() {
             </div>
           )}
       </main>
+      
+      <Footer />
     </div>
   );
 }
