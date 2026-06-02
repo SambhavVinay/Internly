@@ -15,7 +15,8 @@ import Footer from "./Footer";
 const API_BASE =
   typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:8000"
-    : (process.env.NEXT_PUBLIC_API_URL || "https://oh-internscrapper-oppurtunityhub.hf.space");
+    : process.env.NEXT_PUBLIC_API_URL ||
+      "https://oh-internscrapper-oppurtunityhub.hf.space";
 const LOCAL_API = API_BASE;
 
 export interface Job {
@@ -46,7 +47,9 @@ export default function InternshipDashboard() {
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
 
   // Company ratings — populated automatically after scraping finishes
-  const [companyRatings, setCompanyRatings] = useState<Record<string, number>>({});
+  const [companyRatings, setCompanyRatings] = useState<Record<string, number>>(
+    {},
+  );
   const [ratingsLoading, setRatingsLoading] = useState(false);
   const [ratingsElapsed, setRatingsElapsed] = useState<number | null>(null);
   const [ratingsError, setRatingsError] = useState("");
@@ -66,7 +69,9 @@ export default function InternshipDashboard() {
   // Keep a ref to the live jobs list so the done-handler can read it without
   // a stale closure (jobs state updates are async).
   const jobsRef = useRef<Job[]>([]);
-  useEffect(() => { jobsRef.current = jobs; }, [jobs]);
+  useEffect(() => {
+    jobsRef.current = jobs;
+  }, [jobs]);
 
   const rateCompaniesAuto = useCallback(async (jobList: Job[]) => {
     const companySet = new Set<string>();
@@ -87,7 +92,8 @@ export default function InternshipDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ companies: Array.from(companySet) }),
       });
-      if (!response.ok) throw new Error(`Rating request failed: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Rating request failed: ${response.status}`);
       const result = await response.json();
       setCompanyRatings(result.ratings ?? {});
       setRatingsElapsed(Math.round((Date.now() - ratingStart) / 1000));
@@ -113,7 +119,11 @@ export default function InternshipDashboard() {
       const data = await res.json();
       setSweepState(data);
       if (!data.is_running) {
-        setSweepStatus(data.failed?.length > 0 && data.completed?.length === 0 ? "error" : "done");
+        setSweepStatus(
+          data.failed?.length > 0 && data.completed?.length === 0
+            ? "error"
+            : "done",
+        );
         stopSweepPoll();
       }
     } catch {
@@ -125,7 +135,9 @@ export default function InternshipDashboard() {
     try {
       setSweepStatus("running");
       setSweepState(null);
-      const res = await fetch(`${API_BASE}/admin/trigger-scrape`, { method: "POST" });
+      const res = await fetch(`${API_BASE}/admin/trigger-scrape`, {
+        method: "POST",
+      });
       const data = await res.json();
       if (data.status === "already_running") {
         // Already running — just start polling
@@ -165,7 +177,7 @@ export default function InternshipDashboard() {
     fetch(`${API_BASE}/schools`)
       .then((r) => r.json())
       .then(setSchools)
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   // Per-school job counts (computed from full unfiltered list).
@@ -178,141 +190,153 @@ export default function InternshipDashboard() {
     ? jobs.filter((j) => j.schools.includes(selectedSchool))
     : jobs;
 
-  const processStream = useCallback(async (res: Response, startTime: number) => {
-    const reader = res.body?.getReader();
-    if (!reader) {
-      throw new Error("Failed to initialize stream reader");
-    }
+  const processStream = useCallback(
+    async (res: Response, startTime: number) => {
+      const reader = res.body?.getReader();
+      if (!reader) {
+        throw new Error("Failed to initialize stream reader");
+      }
 
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let hasJobs = false;
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let hasJobs = false;
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
 
-        try {
-          const chunk = JSON.parse(trimmed);
-          if (chunk.type === "start") {
-            setEngine(chunk.engine || "");
-            if (chunk.total_searches) {
-              setTotalSearches(chunk.total_searches);
-              setStatusMessages([`Checking ${chunk.total_searches} sources simultaneously`]);
-            }
-          } else if (chunk.type === "info") {
-            console.log("Search info:", chunk.message);
-            setStatusMessages((prev) => {
-              const updated = [...prev, chunk.message];
-              return updated.slice(-3);
-            });
-          } else if (chunk.type === "jobs") {
-            if (chunk.data && chunk.data.length > 0) {
-              hasJobs = true;
-              setJobs((prev) => {
-                const combined = [...prev, ...chunk.data];
-                const seen = new Set();
-                return combined.filter((job) => {
-                  if (!job.link) return true;
-                  if (seen.has(job.link)) return false;
-                  seen.add(job.link);
-                  return true;
-                });
+          try {
+            const chunk = JSON.parse(trimmed);
+            if (chunk.type === "start") {
+              setEngine(chunk.engine || "");
+              if (chunk.total_searches) {
+                setTotalSearches(chunk.total_searches);
+                setStatusMessages([
+                  `Checking ${chunk.total_searches} sources simultaneously`,
+                ]);
+              }
+            } else if (chunk.type === "info") {
+              console.log("Search info:", chunk.message);
+              setStatusMessages((prev) => {
+                const updated = [...prev, chunk.message];
+                return updated.slice(-3);
               });
-              if (chunk.deduplicated) {
-                setDeduplicatedCount((prev) => prev + chunk.deduplicated);
+            } else if (chunk.type === "jobs") {
+              if (chunk.data && chunk.data.length > 0) {
+                hasJobs = true;
+                setJobs((prev) => {
+                  const combined = [...prev, ...chunk.data];
+                  const seen = new Set();
+                  return combined.filter((job) => {
+                    if (!job.link) return true;
+                    if (seen.has(job.link)) return false;
+                    seen.add(job.link);
+                    return true;
+                  });
+                });
+                if (chunk.deduplicated) {
+                  setDeduplicatedCount((prev) => prev + chunk.deduplicated);
+                }
+                setTotal((prev) => prev + chunk.data.length);
+                if (chunk.engine) {
+                  setEngine(chunk.engine);
+                }
               }
-              setTotal((prev) => prev + chunk.data.length);
-              if (chunk.engine) {
-                setEngine(chunk.engine);
+            } else if (chunk.type === "done") {
+              setEngine(chunk.engine || "");
+              if (chunk.url) setScrapeUrl(chunk.url);
+              setTotal(chunk.total || 0);
+              setElapsed(Math.round((Date.now() - startTime) / 1000));
+              if (chunk.partial && hasJobs) {
+                setErrorMsg(
+                  `Found opportunities but the search was interrupted: ${chunk.error || "connection lost"}`,
+                );
               }
-            }
-          } else if (chunk.type === "done") {
-            setEngine(chunk.engine || "");
-            if (chunk.url) setScrapeUrl(chunk.url);
-            setTotal(chunk.total || 0);
-            setElapsed(Math.round((Date.now() - startTime) / 1000));
-            if (chunk.partial && hasJobs) {
-              setErrorMsg(`Found opportunities but the search was interrupted: ${chunk.error || "connection lost"}`);
-            }
-            setStatus("success");
-            // ── Auto-rate companies after scraping finishes ──────────
-            // Use the ref so we get the fully up-to-date job list
-            setTimeout(() => rateCompaniesAuto(jobsRef.current), 100);
-          } else if (chunk.type === "error") {
-            if (hasJobs) {
-              setErrorMsg(`Found opportunities before the search ended: ${chunk.message || "Search failed"}`);
               setStatus("success");
-            } else {
-              throw new Error(chunk.message || "Search failed");
+              // ── Auto-rate companies after scraping finishes ──────────
+              // Use the ref so we get the fully up-to-date job list
+              setTimeout(() => rateCompaniesAuto(jobsRef.current), 100);
+            } else if (chunk.type === "error") {
+              if (hasJobs) {
+                setErrorMsg(
+                  `Found opportunities before the search ended: ${chunk.message || "Search failed"}`,
+                );
+                setStatus("success");
+              } else {
+                throw new Error(chunk.message || "Search failed");
+              }
             }
+          } catch (e) {
+            console.error("Failed to parse stream line:", e);
           }
-        } catch (e) {
-          console.error("Failed to parse stream line:", e);
         }
       }
-    }
 
-    setStatus((prev) => (prev === "loading" ? "success" : prev));
-    setElapsed(Math.round((Date.now() - startTime) / 1000));
-  }, []);
-
-  const handleScrape = useCallback(async (filters: SearchFilters) => {
-    setStatus("loading");
-    setErrorMsg("");
-    setJobs([]);
-    setTotal(0);
-    setEngine("");
-    setScrapeUrl("");
-    setSelectedSchool(null);
-    setTotalSearches(0);
-    setDeduplicatedCount(0);
-    setStatusMessages([]);
-    // Reset ratings for the new scrape
-    setCompanyRatings({});
-    setRatingsElapsed(null);
-    setRatingsError("");
-    setRatingsLoading(false);
-
-    setLastQuery({ keywords: filters.keywords, location: "Bengaluru metro" });
-
-    const startTime = Date.now();
-
-    try {
-      const params = new URLSearchParams({
-        keywords: filters.keywords,
-        freshness: filters.freshness,
-      });
-      for (const wt of filters.work_types) params.append("work_types", wt);
-      for (const jt of filters.job_types) params.append("job_types", jt);
-
-      const res = await fetch(
-        `${API_BASE}/scrape-internships?${params.toString()}`,
-        { method: "POST" }
-      );
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.detail || `Server responded with ${res.status}`);
-      }
-
-      await processStream(res, startTime);
-    } catch (err: unknown) {
+      setStatus((prev) => (prev === "loading" ? "success" : prev));
       setElapsed(Math.round((Date.now() - startTime) / 1000));
-      setErrorMsg(
-        err instanceof Error ? err.message : "An unexpected error occurred"
-      );
-      setStatus("error");
-    }
-  }, [processStream]);
+    },
+    [],
+  );
+
+  const handleScrape = useCallback(
+    async (filters: SearchFilters) => {
+      setStatus("loading");
+      setErrorMsg("");
+      setJobs([]);
+      setTotal(0);
+      setEngine("");
+      setScrapeUrl("");
+      setSelectedSchool(null);
+      setTotalSearches(0);
+      setDeduplicatedCount(0);
+      setStatusMessages([]);
+      // Reset ratings for the new scrape
+      setCompanyRatings({});
+      setRatingsElapsed(null);
+      setRatingsError("");
+      setRatingsLoading(false);
+
+      setLastQuery({ keywords: filters.keywords, location: "Bengaluru metro" });
+
+      const startTime = Date.now();
+
+      try {
+        const params = new URLSearchParams({
+          keywords: filters.keywords,
+          freshness: filters.freshness,
+        });
+        for (const wt of filters.work_types) params.append("work_types", wt);
+        for (const jt of filters.job_types) params.append("job_types", jt);
+
+        const res = await fetch(
+          `${API_BASE}/scrape-internships?${params.toString()}`,
+          { method: "POST" },
+        );
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => null);
+          throw new Error(err?.detail || `Server responded with ${res.status}`);
+        }
+
+        await processStream(res, startTime);
+      } catch (err: unknown) {
+        setElapsed(Math.round((Date.now() - startTime) / 1000));
+        setErrorMsg(
+          err instanceof Error ? err.message : "An unexpected error occurred",
+        );
+        setStatus("error");
+      }
+    },
+    [processStream],
+  );
 
   const reconnectToStream = useCallback(async () => {
     setStatus("loading");
@@ -338,13 +362,13 @@ export default function InternshipDashboard() {
 
   useEffect(() => {
     fetch(`${API_BASE}/scrape-internships/status`)
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data.is_active || data.has_history) {
           reconnectToStream();
         }
       })
-      .catch(e => console.error("Failed to check scrape status", e));
+      .catch((e) => console.error("Failed to check scrape status", e));
   }, [reconnectToStream]);
 
   return (
@@ -377,7 +401,10 @@ export default function InternshipDashboard() {
               >
                 OpportunityHub
               </h1>
-              <p className="text-xs font-medium" style={{ color: "var(--muted)" }}>
+              <p
+                className="text-xs font-medium"
+                style={{ color: "var(--muted)" }}
+              >
                 Student Career Discovery
               </p>
             </div>
@@ -457,49 +484,83 @@ export default function InternshipDashboard() {
               id="auto-scrape-btn"
               onClick={triggerAutoScrape}
               disabled={sweepStatus === "running"}
-              title={sweepStatus === "running" ? "Sweep in progress…" : "Scrape all 8 schools now"}
+              title={
+                sweepStatus === "running"
+                  ? "Sweep in progress…"
+                  : "Scrape all 8 schools now"
+              }
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200"
               style={{
                 background:
                   sweepStatus === "running"
                     ? "rgba(217,119,6,0.10)"
                     : sweepStatus === "done"
-                    ? "rgba(5,150,105,0.10)"
-                    : sweepStatus === "error"
-                    ? "rgba(239,68,68,0.10)"
-                    : "var(--surface-1)",
+                      ? "rgba(5,150,105,0.10)"
+                      : sweepStatus === "error"
+                        ? "rgba(239,68,68,0.10)"
+                        : "var(--surface-1)",
                 color:
                   sweepStatus === "running"
                     ? "var(--warning)"
                     : sweepStatus === "done"
-                    ? "var(--success)"
-                    : sweepStatus === "error"
-                    ? "var(--error)"
-                    : "var(--foreground)",
+                      ? "var(--success)"
+                      : sweepStatus === "error"
+                        ? "var(--error)"
+                        : "var(--foreground)",
                 border: `2px solid ${
                   sweepStatus === "running"
                     ? "var(--warning)"
                     : sweepStatus === "done"
-                    ? "var(--success)"
-                    : sweepStatus === "error"
-                    ? "var(--error)"
-                    : "var(--card-border)"
+                      ? "var(--success)"
+                      : sweepStatus === "error"
+                        ? "var(--error)"
+                        : "var(--card-border)"
                 }`,
                 cursor: sweepStatus === "running" ? "not-allowed" : "pointer",
                 opacity: sweepStatus === "running" ? 0.8 : 1,
               }}
             >
               {sweepStatus === "running" ? (
-                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg
+                  className="w-3 h-3 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
               ) : sweepStatus === "done" ? (
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               ) : (
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
               )}
               {sweepStatus === "running"
@@ -507,14 +568,16 @@ export default function InternshipDashboard() {
                   ? `Scraping ${sweepState.current_school}…`
                   : "Starting…"
                 : sweepStatus === "done"
-                ? "Sweep done ✓"
-                : sweepStatus === "error"
-                ? "Sweep failed"
-                : "Auto-Scrape Schools"}
+                  ? "Sweep done ✓"
+                  : sweepStatus === "error"
+                    ? "Sweep failed"
+                    : "Auto-Scrape Schools"}
             </button>
 
             {/* Stop Auto-Scrape Button */}
-            {(sweepStatus === "running" || sweepStatus === "done" || sweepStatus === "error") && (
+            {(sweepStatus === "running" ||
+              sweepStatus === "done" ||
+              sweepStatus === "error") && (
               <button
                 onClick={stopAutoScrape}
                 title="Stop the hourly scraper and cancel the current sweep"
@@ -526,9 +589,23 @@ export default function InternshipDashboard() {
                   cursor: "pointer",
                 }}
               >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
+                  />
                 </svg>
                 Stop Auto-Scrape
               </button>
@@ -538,15 +615,20 @@ export default function InternshipDashboard() {
             <div
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold"
               style={{
-                background: status === "loading" ? "rgba(217, 119, 6, 0.08)" : "rgba(5, 150, 105, 0.08)",
-                color: status === "loading" ? "var(--warning)" : "var(--success)",
+                background:
+                  status === "loading"
+                    ? "rgba(217, 119, 6, 0.08)"
+                    : "rgba(5, 150, 105, 0.08)",
+                color:
+                  status === "loading" ? "var(--warning)" : "var(--success)",
                 border: `2px solid ${status === "loading" ? "var(--warning)" : "var(--success)"}`,
               }}
             >
               <span
                 className={`w-2 h-2 rounded-full ${status === "loading" ? "animate-breathe" : ""}`}
                 style={{
-                  background: status === "loading" ? "var(--warning)" : "var(--success)",
+                  background:
+                    status === "loading" ? "var(--warning)" : "var(--success)",
                 }}
               />
               {status === "loading" ? "Searching..." : "Ready"}
@@ -567,7 +649,9 @@ export default function InternshipDashboard() {
         <SearchForm onSubmit={handleScrape} isLoading={status === "loading"} />
 
         {/* ── Auto-Scrape Progress Panel ───────────────────────────────────── */}
-        {(sweepStatus === "running" || sweepStatus === "done" || sweepStatus === "error") && (
+        {(sweepStatus === "running" ||
+          sweepStatus === "done" ||
+          sweepStatus === "error") && (
           <div
             className="mt-5 p-4 rounded-xl animate-fade-in-up"
             style={{
@@ -575,14 +659,14 @@ export default function InternshipDashboard() {
                 sweepStatus === "error"
                   ? "rgba(239,68,68,0.06)"
                   : sweepStatus === "done"
-                  ? "rgba(5,150,105,0.06)"
-                  : "rgba(217,119,6,0.06)",
+                    ? "rgba(5,150,105,0.06)"
+                    : "rgba(217,119,6,0.06)",
               border: `2px solid ${
                 sweepStatus === "error"
                   ? "var(--error)"
                   : sweepStatus === "done"
-                  ? "var(--success)"
-                  : "var(--warning)"
+                    ? "var(--success)"
+                    : "var(--warning)"
               }`,
             }}
           >
@@ -590,8 +674,18 @@ export default function InternshipDashboard() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 {sweepStatus === "running" && (
-                  <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" stroke="var(--warning)" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <svg
+                    className="w-4 h-4 animate-spin shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="var(--warning)"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
                   </svg>
                 )}
                 <p
@@ -601,15 +695,15 @@ export default function InternshipDashboard() {
                       sweepStatus === "error"
                         ? "var(--error)"
                         : sweepStatus === "done"
-                        ? "var(--success)"
-                        : "var(--warning)",
+                          ? "var(--success)"
+                          : "var(--warning)",
                   }}
                 >
                   {sweepStatus === "running"
                     ? `Sweeping schools… ${sweepState?.progress ?? "0/8"}`
                     : sweepStatus === "done"
-                    ? `Sweep complete — ${sweepState?.progress ?? "8/8"} schools processed`
-                    : "Sweep encountered errors"}
+                      ? `Sweep complete — ${sweepState?.progress ?? "8/8"} schools processed`
+                      : "Sweep encountered errors"}
                 </p>
               </div>
               {sweepState?.elapsed_seconds !== undefined && (
@@ -629,10 +723,15 @@ export default function InternshipDashboard() {
                   className="h-full rounded-full transition-all duration-700"
                   style={{
                     width: `${Math.round(
-                      ((sweepState.completed.length + sweepState.failed.length) / TOTAL_SCHOOLS) * 100
+                      ((sweepState.completed.length +
+                        sweepState.failed.length) /
+                        TOTAL_SCHOOLS) *
+                        100,
                     )}%`,
                     background:
-                      sweepStatus === "done" ? "var(--success)" : "var(--warning)",
+                      sweepStatus === "done"
+                        ? "var(--success)"
+                        : "var(--warning)",
                   }}
                 />
               </div>
@@ -707,25 +806,64 @@ export default function InternshipDashboard() {
                 : ratingsLoading
                   ? "rgba(217,119,6,0.08)"
                   : "rgba(251,191,36,0.10)",
-              border: `2px solid ${ratingsError ? "var(--error)" : ratingsLoading ? "var(--warning)" : "#f59e0b"
-                }`,
+              border: `2px solid ${
+                ratingsError
+                  ? "var(--error)"
+                  : ratingsLoading
+                    ? "var(--warning)"
+                    : "#f59e0b"
+              }`,
             }}
           >
             {ratingsLoading ? (
-              <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: "var(--warning)" }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <svg
+                className="w-4 h-4 animate-spin shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                style={{ color: "var(--warning)" }}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
               </svg>
             ) : ratingsError ? (
-              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="var(--error)" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+              <svg
+                className="w-4 h-4 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="var(--error)"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"
+                />
               </svg>
             ) : (
-              <svg className="w-4 h-4 shrink-0" fill="#f59e0b" viewBox="0 0 24 24">
+              <svg
+                className="w-4 h-4 shrink-0"
+                fill="#f59e0b"
+                viewBox="0 0 24 24"
+              >
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold" style={{ color: ratingsError ? "var(--error)" : ratingsLoading ? "var(--warning)" : "#f59e0b" }}>
+              <p
+                className="text-xs font-bold"
+                style={{
+                  color: ratingsError
+                    ? "var(--error)"
+                    : ratingsLoading
+                      ? "var(--warning)"
+                      : "#f59e0b",
+                }}
+              >
                 {ratingsLoading
                   ? "Rating companies with AI…"
                   : ratingsError
@@ -734,7 +872,8 @@ export default function InternshipDashboard() {
               </p>
               {!ratingsLoading && !ratingsError && ratingsElapsed !== null && (
                 <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
-                  {Object.keys(companyRatings).length} companies rated in {ratingsElapsed}s
+                  {Object.keys(companyRatings).length} companies rated in{" "}
+                  {ratingsElapsed}s
                 </p>
               )}
             </div>
@@ -776,14 +915,16 @@ export default function InternshipDashboard() {
         )}
 
         {/* ── School/Department Filter ────────────────── */}
-        {status === "success" && jobs.length > 0 && Object.keys(schools).length > 0 && (
-          <SchoolFilter
-            schools={schools}
-            selectedSchool={selectedSchool}
-            onChange={setSelectedSchool}
-            counts={counts}
-          />
-        )}
+        {status === "success" &&
+          jobs.length > 0 &&
+          Object.keys(schools).length > 0 && (
+            <SchoolFilter
+              schools={schools}
+              selectedSchool={selectedSchool}
+              onChange={setSelectedSchool}
+              counts={counts}
+            />
+          )}
 
         {/* ── Skeleton Loading (initial) ────────────── */}
         {status === "loading" && jobs.length === 0 && (
@@ -806,66 +947,68 @@ export default function InternshipDashboard() {
         )}
 
         {/* ── Results Grid (real-time stream) ───────── */}
-        {(status === "success" || (status === "loading" && jobs.length > 0)) && filteredJobs.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8">
-            {filteredJobs.map((job, i) => (
-              <JobCard
-                key={i}
-                job={job}
-                index={i}
-                rating={job.company ? companyRatings[job.company] : undefined}
-              />
-            ))}
+        {(status === "success" || (status === "loading" && jobs.length > 0)) &&
+          filteredJobs.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8">
+              {filteredJobs.map((job, i) => (
+                <JobCard
+                  key={i}
+                  job={job}
+                  index={i}
+                  rating={job.company ? companyRatings[job.company] : undefined}
+                />
+              ))}
 
-            {/* Pulsing card appended at the end when still loading additional pages */}
-            {status === "loading" && (
-              <div
-                className="neo-card-static p-5 animate-progress-pulse"
-              >
-                <div className="skeleton h-5 w-3/4 mb-3" />
-                <div className="skeleton h-4 w-1/2 mb-2" />
-                <div className="skeleton h-3 w-1/3 mb-3" />
-                <div className="skeleton h-3 w-1/4" />
-              </div>
-            )}
-          </div>
-        )}
+              {/* Pulsing card appended at the end when still loading additional pages */}
+              {status === "loading" && (
+                <div className="neo-card-static p-5 animate-progress-pulse">
+                  <div className="skeleton h-5 w-3/4 mb-3" />
+                  <div className="skeleton h-4 w-1/2 mb-2" />
+                  <div className="skeleton h-3 w-1/3 mb-3" />
+                  <div className="skeleton h-3 w-1/4" />
+                </div>
+              )}
+            </div>
+          )}
 
         {/* ── Empty State (filtered) ────────────────── */}
-        {status === "success" && jobs.length > 0 && filteredJobs.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 animate-fade-in-up">
-            <div
-              className="w-14 h-14 rounded-xl flex items-center justify-center mb-5"
-              style={{
-                background: "var(--surface-1)",
-                border: "2px solid var(--card-border)",
-              }}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--muted)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        {status === "success" &&
+          jobs.length > 0 &&
+          filteredJobs.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 animate-fade-in-up">
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center mb-5"
+                style={{
+                  background: "var(--surface-1)",
+                  border: "2px solid var(--card-border)",
+                }}
               >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--muted)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </div>
+              <p
+                className="text-base font-bold"
+                style={{ color: "var(--foreground)" }}
+              >
+                No opportunities match this department
+              </p>
+              <p className="text-sm mt-1.5" style={{ color: "var(--muted)" }}>
+                Try a different department or clear the filter to see all
+                results.
+              </p>
             </div>
-            <p
-              className="text-base font-bold"
-              style={{ color: "var(--foreground)" }}
-            >
-              No opportunities match this department
-            </p>
-            <p className="text-sm mt-1.5" style={{ color: "var(--muted)" }}>
-              Try a different department or clear the filter to see all results.
-            </p>
-          </div>
-        )}
+          )}
 
         {/* ── Empty State (no results) ──────────────── */}
         {status === "success" && jobs.length === 0 && (
@@ -898,8 +1041,12 @@ export default function InternshipDashboard() {
             >
               No opportunities matched your search
             </p>
-            <p className="text-sm mt-1.5 max-w-sm text-center" style={{ color: "var(--muted)" }}>
-              Try different keywords, a broader location, or adjust the filters to find more opportunities.
+            <p
+              className="text-sm mt-1.5 max-w-sm text-center"
+              style={{ color: "var(--muted)" }}
+            >
+              Try different keywords, a broader location, or adjust the filters
+              to find more opportunities.
             </p>
             {scrapeUrl && (
               <a
@@ -952,8 +1099,8 @@ export default function InternshipDashboard() {
               style={{ color: "var(--muted)" }}
             >
               Search by role, industry, or department to find relevant
-              opportunities across the Bengaluru metro area. Results are
-              indexed from publicly available listings.
+              opportunities across the Bengaluru metro area. Results are indexed
+              from publicly available listings.
             </p>
             <div
               className="flex items-center gap-3 mt-6 text-xs font-mono font-medium px-4 py-2 rounded-lg"
