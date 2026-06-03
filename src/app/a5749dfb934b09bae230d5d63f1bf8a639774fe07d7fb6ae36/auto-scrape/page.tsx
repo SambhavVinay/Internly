@@ -345,13 +345,18 @@ export default function AutoScrapeAnalyticsPage() {
     }
   }, []);
 
+  // Poll fast (3s) when a sweep is actively running, slow (30s) when idle.
+  // This prevents hammering the server with DB connections when nothing is happening.
+  const isAnyRunning = history.some((s) => s.is_running);
+
   useEffect(() => {
     fetchHistory();
-    pollRef.current = setInterval(fetchHistory, 3000);
+    const interval = isAnyRunning ? 3000 : 30000;
+    pollRef.current = setInterval(fetchHistory, interval);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [fetchHistory]);
+  }, [fetchHistory, isAnyRunning]);
 
   // Compute summary stats
   const totalJobs = history.reduce(
@@ -651,7 +656,7 @@ export default function AutoScrapeAnalyticsPage() {
                 Sweep History
               </h2>
               <p className="text-xs font-mono" style={{ color: "var(--muted)" }}>
-                Auto-refreshing every 3s
+                Auto-refreshing every {isAnyRunning ? "3s" : "30s"}
               </p>
             </div>
             {history.map((sweep) => (
