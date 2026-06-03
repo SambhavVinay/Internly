@@ -43,6 +43,7 @@ export default function StudentDashboard() {
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
+  const [viewedJobIds, setViewedJobIds] = useState<number[]>([]);
   const [companyRatings, setCompanyRatings] = useState<Record<string, number>>(
     {},
   );
@@ -157,7 +158,9 @@ export default function StudentDashboard() {
         throw new Error(`Failed to fetch data: ${response.status}`);
       }
       const result = await response.json();
-      setData(result);
+      const { jobsOpened, ...dashboardData } = result;
+      setData(dashboardData);
+      setViewedJobIds(jobsOpened || []);
       setLastUpdated(new Date());
       setError("");
     } catch (err) {
@@ -540,6 +543,12 @@ export default function StudentDashboard() {
                         key={`${section.id}-${i}`}
                         job={job}
                         index={i}
+                        viewed={job.id ? viewedJobIds.includes(job.id) : false}
+                        onViewed={(jobId) => {
+                          setViewedJobIds((prev) =>
+                            prev.includes(jobId) ? prev : [...prev, jobId]
+                          );
+                        }}
                         rating={
                           job.company
                             ? (companyRatings[job.company] ??

@@ -36,6 +36,13 @@
       "when": 1779858641134,
       "tag": "0004_striped_jane_foster",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780466091632,
+      "tag": "0005_square_paladin",
+      "breakpoints": true
     }
   ]
 }

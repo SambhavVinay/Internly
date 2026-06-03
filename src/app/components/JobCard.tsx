@@ -7,6 +7,8 @@ interface JobCardProps {
   job: Job;
   index: number;
   rating?: number; // 1.0–5.0, shown as stars; omit for no stars
+  viewed?: boolean;
+  onViewed?: (jobId: number) => void;
 }
 
 // Renders up to 5 stars (filled / half / empty) for a 1–5 float rating.
@@ -100,7 +102,7 @@ function useTimeAgo(postedDatetime?: string | null, fallback?: string | null) {
   return timeAgo;
 }
 
-export default function JobCard({ job, index, rating }: JobCardProps) {
+export default function JobCard({ job, index, rating, viewed, onViewed }: JobCardProps) {
   const staggerClass = `stagger-${Math.min(index + 1, 10)}`;
   const timeAgo = useTimeAgo(job.posted_datetime, job.posted);
   const [showAllPrograms, setShowAllPrograms] = useState(false);
@@ -109,7 +111,7 @@ export default function JobCard({ job, index, rating }: JobCardProps) {
     <div
       className={`neo-card p-5 animate-fade-in-up ${staggerClass}`}
     >
-      {/* Header row: Title + Posted badge */}
+      {/* Header row: Title + Posted/Viewed badges */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <h3
           className="text-sm font-bold leading-snug line-clamp-2 flex-1"
@@ -117,18 +119,32 @@ export default function JobCard({ job, index, rating }: JobCardProps) {
         >
           {job.title || "Position Details Pending"}
         </h3>
-        {timeAgo && (
-          <span
-            className="shrink-0 px-2 py-0.5 rounded-md text-xs font-semibold whitespace-nowrap"
-            style={{
-              background: "var(--accent-dim)",
-              color: "var(--accent)",
-              border: "1.5px solid var(--accent)",
-            }}
-          >
-            {timeAgo}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+          {viewed && (
+            <span
+              className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap animate-fade-in-up"
+              style={{
+                background: "rgba(16, 185, 129, 0.08)",
+                color: "var(--success)",
+                border: "1.5px solid var(--success)",
+              }}
+            >
+              Viewed
+            </span>
+          )}
+          {timeAgo && (
+            <span
+              className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+              style={{
+                background: "var(--accent-dim)",
+                color: "var(--accent)",
+                border: "1.5px solid var(--accent)",
+              }}
+            >
+              {timeAgo}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Company */}
@@ -251,6 +267,20 @@ export default function JobCard({ job, index, rating }: JobCardProps) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-sm font-bold transition-all duration-150"
             style={{ color: "var(--accent)" }}
+            onClick={async () => {
+              if (job.id) {
+                if (onViewed) onViewed(job.id);
+                try {
+                  await fetch("/api/student/jobs/open", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ jobId: job.id }),
+                  });
+                } catch (err) {
+                  console.error("Failed to log job open event:", err);
+                }
+              }
+            }}
             onMouseEnter={(e) => {
               e.currentTarget.style.gap = "10px";
             }}

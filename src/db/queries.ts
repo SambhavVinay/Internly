@@ -35,6 +35,7 @@ export type NewScrapedJob = typeof scrapedJobs.$inferInsert;
  * for timestamps, so it survives a `JSON.stringify` round trip.
  */
 export interface JobPayload {
+  id?: number;
   title?: string | null;
   company?: string | null;
   location?: string | null;
@@ -135,6 +136,7 @@ function excludedSet<
  */
 function rowToPayload(row: ScrapedJob): JobPayload {
   return {
+    id: row.id,
     title: row.title,
     company: row.company,
     location: row.location,

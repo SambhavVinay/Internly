@@ -20,6 +20,7 @@ const API_BASE =
 const LOCAL_API = API_BASE;
 
 export interface Job {
+  id?: number;
   title: string | null;
   company: string | null;
   location: string | null;

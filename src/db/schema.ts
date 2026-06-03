@@ -7,6 +7,7 @@ import {
   serial,
   text,
   timestamp,
+  integer,
 } from "drizzle-orm/pg-core";
 
 // ── Scraped jobs (existing) ─────────────────────────────────────────────────
@@ -75,6 +76,7 @@ export const user = pgTable("user", {
   image: text("image"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  jobsOpened: integer("jobs_opened").array().notNull().default([]),
 });
 
 export const session = pgTable("session", {
