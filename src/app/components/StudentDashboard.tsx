@@ -329,6 +329,64 @@ export default function StudentDashboard() {
           </div>
         )}
 
+        {/* Jump to Timeframe controls (Fixed Sidebar) */}
+        {data && (
+          <div
+            className={`fixed right-4 top-36 z-40 hidden md:flex flex-col gap-3 p-4 rounded-xl transition-opacity duration-300 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}
+            style={{
+              background: "var(--card)",
+              border: "2px solid var(--card-border)",
+              boxShadow: "var(--shadow-brutal)",
+              width: "160px",
+            }}
+          >
+            <div className="flex items-center justify-center gap-1.5 text-[10px] font-black tracking-wider text-center" style={{ color: "var(--muted)" }}>
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              TIMEFRAMES
+            </div>
+            <div className="flex flex-col gap-2">
+              {[
+                { id: "1_hour", label: "Last Hour", count: filteredData?.["1_hour"]?.count || 0 },
+                { id: "2_hours", label: "1-2h Ago", count: filteredData?.["2_hours"]?.count || 0 },
+                { id: "5_hours", label: "2-5h Ago", count: filteredData?.["5_hours"]?.count || 0 },
+                { id: "24_hours", label: "5-24h Ago", count: filteredData?.["24_hours"]?.count || 0 },
+                { id: "1_week", label: "1-7d Ago", count: filteredData?.["1_week"]?.count || 0 },
+                { id: "1_month", label: "1-4w Ago", count: filteredData?.["1_month"]?.count || 0 },
+              ].map((tf) => (
+                <button
+                  key={tf.id}
+                  onClick={() => {
+                    const el = document.getElementById(`section-${tf.id}`);
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-transform duration-150 active:translate-y-[1px] cursor-pointer"
+                  style={{
+                    background: "var(--surface-1)",
+                    color: "var(--foreground)",
+                    border: "2px solid var(--card-border)",
+                    boxShadow: "var(--shadow-brutal-sm)",
+                  }}
+                >
+                  <span className="truncate">{tf.label}</span>
+                  <span
+                    className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums font-mono shrink-0"
+                    style={{
+                      background: "var(--surface-2)",
+                      color: "var(--muted)",
+                    }}
+                  >
+                    {tf.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Error State */}
         {error && (
           <div
@@ -426,7 +484,11 @@ export default function StudentDashboard() {
                 isRecent: false,
               },
             ].map((section) => (
-              <section key={section.id}>
+              <section
+                key={section.id}
+                id={`section-${section.id}`}
+                style={{ scrollMarginTop: "100px" }}
+              >
                 <div className="flex items-center gap-3 mb-6">
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center"

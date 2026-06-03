@@ -103,6 +103,7 @@ function useTimeAgo(postedDatetime?: string | null, fallback?: string | null) {
 export default function JobCard({ job, index, rating }: JobCardProps) {
   const staggerClass = `stagger-${Math.min(index + 1, 10)}`;
   const timeAgo = useTimeAgo(job.posted_datetime, job.posted);
+  const [showAllPrograms, setShowAllPrograms] = useState(false);
 
   return (
     <div
@@ -194,7 +195,7 @@ export default function JobCard({ job, index, rating }: JobCardProps) {
       {/* Program tags */}
       {job.programs && job.programs.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {job.programs.slice(0, 3).map((prog) => (
+          {(showAllPrograms ? job.programs : job.programs.slice(0, 3)).map((prog) => (
             <span
               key={prog}
               className="px-2 py-0.5 rounded text-xs font-semibold"
@@ -207,17 +208,33 @@ export default function JobCard({ job, index, rating }: JobCardProps) {
               {prog}
             </span>
           ))}
-          {job.programs.length > 3 && (
-            <span
-              className="px-2 py-0.5 rounded text-xs font-semibold"
+          {!showAllPrograms && job.programs.length > 3 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPrograms(true)}
+              className="px-2 py-0.5 rounded text-xs font-semibold hover:opacity-85 active:translate-y-[1px] transition-transform duration-75 cursor-pointer"
               style={{
                 background: "var(--surface-1)",
-                color: "var(--muted)",
-                border: "1.5px solid var(--card-border)",
+                color: "var(--accent)",
+                border: "1.5px solid var(--accent)",
               }}
             >
               +{job.programs.length - 3} more
-            </span>
+            </button>
+          )}
+          {showAllPrograms && job.programs.length > 3 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPrograms(false)}
+              className="px-2 py-0.5 rounded text-xs font-semibold hover:opacity-85 active:translate-y-[1px] transition-transform duration-75 cursor-pointer"
+              style={{
+                background: "var(--surface-1)",
+                color: "var(--accent)",
+                border: "1.5px solid var(--accent)",
+              }}
+            >
+              show less
+            </button>
           )}
         </div>
       )}

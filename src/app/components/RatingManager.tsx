@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 const API_BASE = typeof window !== "undefined" && window.location.hostname === "localhost"
   ? "http://localhost:8000"
@@ -80,6 +81,33 @@ export default function RatingManager() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      <Link
+        href="/student"
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-transform duration-150 active:translate-y-[1px] mb-6"
+        style={{
+          background: "var(--surface-1)",
+          color: "var(--foreground)",
+          border: "2px solid var(--card-border)",
+          boxShadow: "var(--shadow-brutal-sm)",
+          textDecoration: "none",
+        }}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+        Back to Dashboard
+      </Link>
+
       <h1 className="text-2xl font-bold mb-6" style={{ color: "var(--foreground)" }}>
         Company Rating Manager
       </h1>

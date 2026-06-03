@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -26,7 +27,7 @@ function LoginCard() {
     // Tell the dashboard to auto-open the account modal once after this
     // OAuth round-trip lands the user back in the app.
     if (typeof window !== "undefined") {
-      window.sessionStorage.setItem("oh:show-account-modal", "1");
+      window.sessionStorage.setItem("internly:show-account-modal", "1");
     }
     const { error: err } = await signIn.social({
       provider: "google",
@@ -34,7 +35,7 @@ function LoginCard() {
     });
     if (err) {
       if (typeof window !== "undefined") {
-        window.sessionStorage.removeItem("oh:show-account-modal");
+        window.sessionStorage.removeItem("internly:show-account-modal");
       }
       setError(err.message ?? "Sign-in failed. Please try again.");
       setSubmitting(false);
@@ -50,48 +51,77 @@ function LoginCard() {
         boxShadow: "var(--shadow-brutal-lg)",
       }}
     >
-      <div className="flex flex-col items-center text-center mb-8">
+      <div className="flex flex-col items-center text-center mb-8 ">
         <div
-          className="w-14 h-14 rounded-xl flex items-center justify-center text-lg font-black mb-4"
+          className="w-17 h-17 rounded-xl flex items-center justify-center text-lg font-black mb-4"
           style={{
-            background: "var(--accent)",
             color: "#ffffff",
-            border: "2px solid var(--card-border)",
-            boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          OH
+          <Image
+            src="/internly.jpeg"
+            alt="Internly Logo"
+            width={100}
+            height={100}
+          />
         </div>
         <h1
           className="text-2xl font-bold tracking-tight"
           style={{ color: "var(--foreground)" }}
         >
-          Sign in to OpportunityHub
+          Sign in to Internly
         </h1>
-        <p
-          className="text-sm mt-2 max-w-xs"
-          style={{ color: "var(--muted)" }}
-        >
+        <p className="text-sm mt-2 max-w-xs" style={{ color: "var(--muted)" }}>
           Use your Google account to access the student dashboard and saved
           opportunities.
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={handleGoogle}
-        disabled={submitting || isPending}
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-transform duration-150 active:translate-y-[1px] disabled:opacity-60 disabled:cursor-not-allowed"
-        style={{
-          background: "var(--surface-1)",
-          color: "var(--foreground)",
-          border: "2px solid var(--card-border)",
-          boxShadow: "var(--shadow-brutal-sm)",
-        }}
-      >
-        <GoogleGlyph />
-        {submitting ? "Redirecting to Google…" : "Continue with Google"}
-      </button>
+      <div className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={handleGoogle}
+          disabled={submitting || isPending}
+          className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-transform duration-150 active:translate-y-[1px] disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{
+            background: "var(--surface-1)",
+            color: "var(--foreground)",
+            border: "2px solid var(--card-border)",
+            boxShadow: "var(--shadow-brutal-sm)",
+          }}
+        >
+          <GoogleGlyph />
+          {submitting ? "Redirecting to Google…" : "Continue with Google"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/student")}
+          className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-transform duration-150 active:translate-y-[1px]"
+          style={{
+            background: "var(--accent-dim)",
+            color: "var(--accent)",
+            border: "2px solid var(--accent)",
+            boxShadow: "var(--shadow-brutal-sm)",
+          }}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+          Enter as Guest Student (Bypass Auth)
+        </button>
+      </div>
 
       {error && (
         <div
@@ -106,12 +136,9 @@ function LoginCard() {
         </div>
       )}
 
-      <p
-        className="text-xs text-center mt-6"
-        style={{ color: "var(--muted)" }}
-      >
-        By continuing you agree that this is an academic research tool and
-        not a commercial job-board.
+      <p className="text-xs text-center mt-6" style={{ color: "var(--muted)" }}>
+        By continuing you agree that this is an academic research tool and not a
+        commercial job-board.
       </p>
     </div>
   );
