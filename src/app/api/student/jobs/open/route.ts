@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { user } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -15,24 +15,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { jobId } = await req.json();
-    if (!jobId || typeof jobId !== "number") {
+    const { jobId } = await request.json();
+    if (typeof jobId !== "number") {
       return NextResponse.json({ error: "Invalid jobId" }, { status: 400 });
     }
 
-    // Update the user's jobsOpened array in DB by appending jobId
-    await db
-      .update(user)
-      .set({
-        jobsOpened: sql`array_append(coalesce(jobs_opened, '{}'::integer[]), ${jobId})`,
-      })
-      .where(eq(user.id, session.user.id));
+    const userId = session.user.id;
+
+    // Fetch the current jobs_opened array
+    const rows = await db
+      .select({ jobsOpened: user.jobsOpened })
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1);
+
+    const currentOpened = rows[0]?.jobsOpened || [];
+
+    // Append the jobId if it's not already in the array
+    if (!currentOpened.includes(jobId)) {
+      const updatedOpened = [...currentOpened, jobId];
+      await db
+        .update(user)
+        .set({ jobsOpened: updatedOpened })
+        .where(eq(user.id, userId));
+    }
 
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("Failed to record job open action:", err);
+  } catch (error) {
+    console.error("Failed to record opened job:", error);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal error" },
+      { error: "Failed to record opened job" },
       { status: 500 }
     );
   }

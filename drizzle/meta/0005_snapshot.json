@@ -1,5 +1,5 @@
 {
-  "id": "8eeb4065-81e9-4853-ad86-afdb7cc0f200",
+  "id": "afd54572-32c5-4f56-81fc-3ad1f614cc3a",
   "prevId": "7264ed01-5ab5-4936-af91-aaf9a6f35279",
   "version": "7",
   "dialect": "postgresql",
@@ -378,6 +378,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "jobs_opened": {
+          "name": "jobs_opened",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -391,13 +398,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "jobs_opened": {
-          "name": "jobs_opened",
-          "type": "integer[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'"
         }
       },
       "indexes": {},

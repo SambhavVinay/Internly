@@ -10,6 +10,7 @@ import type { SchoolsData } from "./SchoolFilter";
 import ThemeToggle from "./ThemeToggle";
 import AcademicNotice from "./AcademicNotice";
 import Footer from "./Footer";
+import Image from "next/image";
 
 // All scraping/admin actions go directly to the Python backend on HuggingFace Spaces
 const API_BASE =
@@ -30,6 +31,7 @@ export interface Job {
   programs: string[];
   schools: string[];
   company_rating?: number | null; // persisted from DB after rating
+  contact_details?: Array<{ name: string; url: string } | string>;
 }
 
 type ScrapeStatus = "idle" | "loading" | "success" | "error";
@@ -232,23 +234,37 @@ export default function InternshipDashboard() {
               });
             } else if (chunk.type === "jobs") {
               if (chunk.data && chunk.data.length > 0) {
-                hasJobs = true;
-                setJobs((prev) => {
-                  const combined = [...prev, ...chunk.data];
-                  const seen = new Set();
-                  return combined.filter((job) => {
-                    if (!job.link) return true;
-                    if (seen.has(job.link)) return false;
-                    seen.add(job.link);
-                    return true;
+                if (chunk.is_contact_update) {
+                  // Merge contact_details into already-displayed jobs
+                  setJobs((prev) => {
+                    const updateMap = new Map(
+                      chunk.data.map((j: Job) => [j.link, j.contact_details]),
+                    );
+                    return prev.map((job) =>
+                      job.link && updateMap.has(job.link)
+                        ? { ...job, contact_details: updateMap.get(job.link) }
+                        : job,
+                    );
                   });
-                });
-                if (chunk.deduplicated) {
-                  setDeduplicatedCount((prev) => prev + chunk.deduplicated);
-                }
-                setTotal((prev) => prev + chunk.data.length);
-                if (chunk.engine) {
-                  setEngine(chunk.engine);
+                } else {
+                  hasJobs = true;
+                  setJobs((prev) => {
+                    const combined = [...prev, ...chunk.data];
+                    const seen = new Set();
+                    return combined.filter((job) => {
+                      if (!job.link) return true;
+                      if (seen.has(job.link)) return false;
+                      seen.add(job.link);
+                      return true;
+                    });
+                  });
+                  if (chunk.deduplicated) {
+                    setDeduplicatedCount((prev) => prev + chunk.deduplicated);
+                  }
+                  setTotal((prev) => prev + chunk.data.length);
+                  if (chunk.engine) {
+                    setEngine(chunk.engine);
+                  }
                 }
               }
             } else if (chunk.type === "done") {
@@ -382,25 +398,27 @@ export default function InternshipDashboard() {
           borderBottom: "2px solid var(--card-border)",
         }}
       >
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black"
               style={{
-                background: "var(--accent)",
                 color: "#ffffff",
-                border: "2px solid var(--card-border)",
-                boxShadow: "2px 2px 0 var(--shadow-color)",
               }}
             >
-              OH
+              <Image
+                src="/internly.jpeg"
+                alt="Internly Logo"
+                width={100}
+                height={100}
+              />
             </div>
             <div>
               <h1
                 className="text-base font-bold tracking-tight"
                 style={{ color: "var(--foreground)" }}
               >
-                OpportunityHub
+                Internly
               </h1>
               <p
                 className="text-xs font-medium"
@@ -411,7 +429,7 @@ export default function InternshipDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-3">
             {/* Student Dashboard Button */}
             <a
               href="/student"

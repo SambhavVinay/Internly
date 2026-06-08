@@ -14,8 +14,10 @@ function LoginCard() {
   const { data: session, isPending } = useSession();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (!isPending && session) {
       router.replace(redirectTo);
     }
@@ -77,50 +79,32 @@ function LoginCard() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={submitting || isPending}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-transform duration-150 active:translate-y-[1px] disabled:opacity-60 disabled:cursor-not-allowed"
-          style={{
-            background: "var(--surface-1)",
-            color: "var(--foreground)",
-            border: "2px solid var(--card-border)",
-            boxShadow: "var(--shadow-brutal-sm)",
-          }}
-        >
-          <GoogleGlyph />
-          {submitting ? "Redirecting to Google…" : "Continue with Google"}
-        </button>
+      <button
+        type="button"
+        onClick={handleGoogle}
+        disabled={submitting || (mounted ? isPending : false)}
+        suppressHydrationWarning
+        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-transform duration-150 active:translate-y-[1px] disabled:opacity-60 disabled:cursor-not-allowed"
+        style={{
+          background: "var(--surface-1)",
+          color: "var(--foreground)",
+          border: "2px solid var(--card-border)",
+          boxShadow: "var(--shadow-brutal-sm)",
+        }}
+      >
+        <GoogleGlyph />
+        {submitting ? "Redirecting to Google…" : "Continue with Google"}
+      </button>
 
-        <button
-          type="button"
-          onClick={() => router.push("/student")}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-transform duration-150 active:translate-y-[1px]"
-          style={{
-            background: "var(--accent-dim)",
-            color: "var(--accent)",
-            border: "2px solid var(--accent)",
-            boxShadow: "var(--shadow-brutal-sm)",
-          }}
+      <div className="flex items-center my-4">
+        <div className="flex-grow border-t border-[var(--card-border)] opacity-20"></div>
+        <span
+          className="px-3 text-xs font-bold uppercase tracking-wider"
+          style={{ color: "var(--muted)" }}
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-            <polyline points="10 17 15 12 10 7" />
-            <line x1="15" y1="12" x2="3" y2="12" />
-          </svg>
-          Enter as Guest Student (Bypass Auth)
-        </button>
+          or
+        </span>
+        <div className="flex-grow border-t border-[var(--card-border)] opacity-20"></div>
       </div>
 
       {error && (

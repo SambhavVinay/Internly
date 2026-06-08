@@ -1,48 +1,44 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { cleanupOldJobs, getBinnedJobs } from "@/db/queries";
-import { auth } from "@/lib/auth";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { auth } from "@/lib/auth";
+import { cleanupOldJobs, getBinnedJobs } from "@/db/queries";
 
 export async function GET() {
   try {
     const data = await getBinnedJobs();
-    // Fire-and-forget style: don't block the response on cleanup.
-    cleanupOldJobs(30).catch(() => {});
-
-    // Try to get user session and jobsOpened
-    let jobsOpened: number[] = [];
+    
+    // Check if user is logged in to fetch their opened jobs list
+    let openedJobIds: number[] = [];
     try {
       const session = await auth.api.getSession({
         headers: await headers(),
       });
-      if (session?.user) {
-        const u = await db
+      if (session?.user?.id) {
+        const rows = await db
           .select({ jobsOpened: user.jobsOpened })
           .from(user)
           .where(eq(user.id, session.user.id))
           .limit(1);
-        if (u.length > 0) {
-          jobsOpened = u[0].jobsOpened || [];
-        }
+        openedJobIds = rows[0]?.jobsOpened || [];
       }
     } catch (sessionErr) {
-      console.error("Failed to get session or jobsOpened in API:", sessionErr);
+      console.error("Failed to fetch session or opened jobs:", sessionErr);
     }
 
-    return NextResponse.json(
-      {
-        ...data,
-        jobsOpened,
+    // Fire-and-forget style: don't block the response on cleanup.
+    cleanupOldJobs(30).catch(() => {});
+    
+    return NextResponse.json({
+      ...data,
+      openedJobIds,
+    }, {
+      headers: {
+        "Cache-Control": "no-store",
       },
-      {
-        headers: {
-          "Cache-Control": "no-store",
-        },
-      }
-    );
+    });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Failed to load student jobs";

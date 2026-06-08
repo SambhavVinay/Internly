@@ -7,15 +7,17 @@ interface JobCardProps {
   job: Job;
   index: number;
   rating?: number; // 1.0–5.0, shown as stars; omit for no stars
-  viewed?: boolean;
-  onViewed?: (jobId: number) => void;
+  isViewed?: boolean;
+  onViewed?: () => void;
 }
 
 // Renders up to 5 stars (filled / half / empty) for a 1–5 float rating.
 function StarRating({ rating }: { rating: number }) {
+  const starColor = rating > 4 ? "var(--success)" : rating >= 3 ? "var(--warning)" : "var(--error)";
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     const fill = rating >= i ? 1 : rating >= i - 0.5 ? 0.5 : 0;
+    const gradientId = `half-${rating.toString().replace('.', '-')}-${i}`;
     stars.push(
       <svg
         key={i}
@@ -28,16 +30,16 @@ function StarRating({ rating }: { rating: number }) {
         {/* Empty star background */}
         <path
           d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-          fill={fill === 0 ? "var(--card-border)" : fill === 1 ? "var(--accent)" : "url(#half)"}
-          stroke={fill === 0 ? "var(--card-border)" : "var(--accent)"}
+          fill={fill === 0 ? "var(--card-border)" : fill === 1 ? starColor : `url(#${gradientId})`}
+          stroke={fill === 0 ? "var(--card-border)" : starColor}
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         {fill === 0.5 && (
           <defs>
-            <linearGradient id="half">
-              <stop offset="50%" stopColor="var(--accent)" />
+            <linearGradient id={gradientId}>
+              <stop offset="50%" stopColor={starColor} />
               <stop offset="50%" stopColor="var(--card-border)" />
             </linearGradient>
           </defs>
@@ -48,7 +50,7 @@ function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-1">
       <div className="flex items-center gap-0.5">{stars}</div>
-      <span className="text-xs font-bold ml-1" style={{ color: "var(--accent)" }}>
+      <span className="text-xs font-bold ml-1" style={{ color: starColor }}>
         {rating.toFixed(1)}
       </span>
       <span className="text-xs" style={{ color: "var(--muted)" }}>/ 5</span>
@@ -102,16 +104,33 @@ function useTimeAgo(postedDatetime?: string | null, fallback?: string | null) {
   return timeAgo;
 }
 
-export default function JobCard({ job, index, rating, viewed, onViewed }: JobCardProps) {
+export default function JobCard({ job, index, rating, isViewed, onViewed }: JobCardProps) {
   const staggerClass = `stagger-${Math.min(index + 1, 10)}`;
   const timeAgo = useTimeAgo(job.posted_datetime, job.posted);
   const [showAllPrograms, setShowAllPrograms] = useState(false);
+
+  const handleJobClick = async () => {
+    if (job.id) {
+      if (onViewed) onViewed();
+      try {
+        await fetch("/api/student/jobs/open", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ jobId: job.id }),
+        });
+      } catch (error) {
+        console.error("Failed to record job open:", error);
+      }
+    }
+  };
 
   return (
     <div
       className={`neo-card p-5 animate-fade-in-up ${staggerClass}`}
     >
-      {/* Header row: Title + Posted/Viewed badges */}
+      {/* Header row: Title + Badges */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <h3
           className="text-sm font-bold leading-snug line-clamp-2 flex-1"
@@ -119,22 +138,23 @@ export default function JobCard({ job, index, rating, viewed, onViewed }: JobCar
         >
           {job.title || "Position Details Pending"}
         </h3>
-        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-          {viewed && (
+        <div className="flex flex-col sm:flex-row items-end gap-1.5 shrink-0">
+          {isViewed && (
             <span
-              className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap animate-fade-in-up"
+              className="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap flex items-center gap-1 animate-fade-in-up"
               style={{
-                background: "rgba(16, 185, 129, 0.08)",
+                background: "rgba(5, 150, 105, 0.1)",
                 color: "var(--success)",
                 border: "1.5px solid var(--success)",
               }}
             >
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse" />
               Viewed
             </span>
           )}
           {timeAgo && (
             <span
-              className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+              className="px-2 py-0.5 rounded-md text-xs font-semibold whitespace-nowrap"
               style={{
                 background: "var(--accent-dim)",
                 color: "var(--accent)",
@@ -172,8 +192,8 @@ export default function JobCard({ job, index, rating, viewed, onViewed }: JobCar
         <div
           className="flex items-center gap-2 mb-2 px-2 py-1 rounded-md"
           style={{
-            background: "var(--accent-dim)",
-            border: "1px solid var(--accent)",
+            background: rating > 4 ? "rgba(5, 150, 105, 0.08)" : rating >= 3 ? "rgba(217, 119, 6, 0.08)" : "rgba(239, 68, 68, 0.08)",
+            border: `1px solid ${rating > 4 ? "var(--success)" : rating >= 3 ? "var(--warning)" : "var(--error)"}`,
             display: "inline-flex",
             width: "fit-content",
           }}
@@ -214,7 +234,7 @@ export default function JobCard({ job, index, rating, viewed, onViewed }: JobCar
           {(showAllPrograms ? job.programs : job.programs.slice(0, 3)).map((prog) => (
             <span
               key={prog}
-              className="px-2 py-0.5 rounded text-xs font-semibold"
+              className="px-2 py-0.5 rounded text-xs font-semibold animate-fade-in-up"
               style={{
                 background: "var(--surface-1)",
                 color: "var(--muted)",
@@ -228,11 +248,20 @@ export default function JobCard({ job, index, rating, viewed, onViewed }: JobCar
             <button
               type="button"
               onClick={() => setShowAllPrograms(true)}
-              className="px-2 py-0.5 rounded text-xs font-semibold hover:opacity-85 active:translate-y-[1px] transition-transform duration-75 cursor-pointer"
+              className="px-2 py-0.5 rounded text-xs font-bold transition-all duration-150 cursor-pointer active:translate-y-[1px]"
               style={{
                 background: "var(--surface-1)",
-                color: "var(--accent)",
-                border: "1.5px solid var(--accent)",
+                color: "var(--muted)",
+                border: "1.5px solid var(--card-border)",
+                boxShadow: "var(--shadow-brutal-sm)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--accent)";
+                e.currentTarget.style.color = "var(--accent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--card-border)";
+                e.currentTarget.style.color = "var(--muted)";
               }}
             >
               +{job.programs.length - 3} more
@@ -242,16 +271,70 @@ export default function JobCard({ job, index, rating, viewed, onViewed }: JobCar
             <button
               type="button"
               onClick={() => setShowAllPrograms(false)}
-              className="px-2 py-0.5 rounded text-xs font-semibold hover:opacity-85 active:translate-y-[1px] transition-transform duration-75 cursor-pointer"
+              className="px-2 py-0.5 rounded text-xs font-bold transition-all duration-150 cursor-pointer active:translate-y-[1px]"
               style={{
-                background: "var(--surface-1)",
+                background: "var(--accent-dim)",
                 color: "var(--accent)",
                 border: "1.5px solid var(--accent)",
+                boxShadow: "var(--shadow-brutal-sm)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--card-border)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--accent)";
               }}
             >
               show less
             </button>
           )}
+        </div>
+      )}
+
+      {/* Hiring Team / Contact Details */}
+      {job.contact_details && job.contact_details.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-4">
+          <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>
+            👤 Contact:
+          </span>
+          {job.contact_details.map((entry, i) => {
+            const url = typeof entry === "string" ? entry : entry.url;
+            const rawName = typeof entry === "string"
+              ? (url.match(/linkedin\.com\/in\/([^/?]+)/)?.[1] ?? "Profile")
+              : entry.name;
+            // Clean up slug-style names (e.g. "john-doe-123456" → "John Doe")
+            const name = rawName
+              .replace(/-\d+$/, "")
+              .split("-").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+            return (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`View ${name}'s LinkedIn profile`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150"
+                style={{
+                  background: "var(--accent-dim)",
+                  color: "var(--accent)",
+                  border: "1.5px solid var(--accent)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--accent)";
+                  e.currentTarget.style.color = "#ffffff";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "var(--accent-dim)";
+                  e.currentTarget.style.color = "var(--accent)";
+                }}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+                {name}
+              </a>
+            );
+          })}
         </div>
       )}
 
@@ -265,22 +348,9 @@ export default function JobCard({ job, index, rating, viewed, onViewed }: JobCar
             href={job.link}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={handleJobClick}
             className="inline-flex items-center gap-2 text-sm font-bold transition-all duration-150"
             style={{ color: "var(--accent)" }}
-            onClick={async () => {
-              if (job.id) {
-                if (onViewed) onViewed(job.id);
-                try {
-                  await fetch("/api/student/jobs/open", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ jobId: job.id }),
-                  });
-                } catch (err) {
-                  console.error("Failed to log job open event:", err);
-                }
-              }
-            }}
             onMouseEnter={(e) => {
               e.currentTarget.style.gap = "10px";
             }}

@@ -15,6 +15,7 @@ export default function Footer() {
   return (
     <>
       <footer
+        id="footer"
         className="mt-auto"
         style={{
           borderTop: "2px solid var(--card-border)",
@@ -30,7 +31,7 @@ export default function Footer() {
                 className="text-sm font-bold tracking-tight mb-3"
                 style={{ color: "var(--foreground)" }}
               >
-                About OpportunityHub
+                About Internly
               </h4>
               <p
                 className="text-sm leading-relaxed"
@@ -77,8 +78,8 @@ export default function Footer() {
               >
                 Opportunity information originates from publicly available
                 listings published by their respective platforms and
-                organizations. We respectfully acknowledge and attribute all
-                content to its original publishers.
+                organizations, notably LinkedIn. We respectfully acknowledge
+                and attribute all content to its original publishers.
               </p>
             </div>
           </div>
@@ -93,7 +94,7 @@ export default function Footer() {
 
           {/* ── Bottom Row: Links + Copyright ── */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4">
               <FooterLink
                 label="Terms & Conditions"
                 onClick={() => setActiveModal("terms")}
@@ -118,7 +119,7 @@ export default function Footer() {
               className="text-xs font-mono"
               style={{ color: "var(--muted)" }}
             >
-              OpportunityHub &middot; Academic Project
+              Internly &middot; Academic Project
             </p>
           </div>
         </div>
@@ -144,7 +145,7 @@ export default function Footer() {
       <LegalModal
         open={activeModal === "about"}
         onClose={() => setActiveModal(null)}
-        title="About OpportunityHub"
+        title="About Internly"
       >
         <AboutContent />
       </LegalModal>
@@ -166,7 +167,7 @@ export default function Footer() {
               className="text-sm leading-relaxed"
               style={{ color: "var(--muted)" }}
             >
-              OpportunityHub is an academic project. For questions, feedback,
+              Internly is an academic project. For questions, feedback,
               or collaboration inquiries, please reach out through your
               institution&apos;s academic channels or contact the project
               maintainers directly.

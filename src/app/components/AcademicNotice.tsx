@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const DISMISS_KEY = "opportunityhub-notice-dismissed";
+const DISMISS_KEY = "internly-notice-dismissed";
 
 export default function AcademicNotice() {
   const [visible, setVisible] = useState(false);

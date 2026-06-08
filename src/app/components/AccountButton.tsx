@@ -195,16 +195,7 @@ export default function AccountButton() {
                       Google
                     </dd>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <dt style={{ color: "var(--muted)" }}>User ID</dt>
-                    <dd
-                      className="font-mono truncate max-w-[60%] text-right"
-                      title={user.id}
-                      style={{ color: "var(--foreground)" }}
-                    >
-                      {user.id}
-                    </dd>
-                  </div>
+                   
                   {session?.expiresAt && (
                     <div className="flex items-center justify-between gap-3">
                       <dt style={{ color: "var(--muted)" }}>Session expires</dt>

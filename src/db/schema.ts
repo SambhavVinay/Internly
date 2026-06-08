@@ -7,7 +7,6 @@ import {
   serial,
   text,
   timestamp,
-  integer,
 } from "drizzle-orm/pg-core";
 
 // ── Scraped jobs (existing) ─────────────────────────────────────────────────
@@ -53,6 +52,10 @@ export const scrapedJobs = pgTable(
       .default([]),
 
     companyRating: real("company_rating"),
+
+    contactDetails: jsonb("contact_details")
+      .$type<string[]>()
+      .default([]),
   },
   (table) => ({
     scrapedAtIdx: index("idx_scraped_at")
@@ -74,9 +77,11 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  jobsOpened: jsonb("jobs_opened")
+    .$type<number[]>()
+    .default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  jobsOpened: integer("jobs_opened").array().notNull().default([]),
 });
 
 export const session = pgTable("session", {

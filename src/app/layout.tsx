@@ -16,7 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OpportunityHub — Student Career Discovery",
+  title: "Internly — Student Career Discovery",
   description:
     "A student-led academic platform that indexes publicly available career opportunities to support internship discovery, career exploration, and student employability research.",
 };

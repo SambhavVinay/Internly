@@ -81,32 +81,41 @@ export default function RatingManager() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <Link
-        href="/student"
-        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-transform duration-150 active:translate-y-[1px] mb-6"
-        style={{
-          background: "var(--surface-1)",
-          color: "var(--foreground)",
-          border: "2px solid var(--card-border)",
-          boxShadow: "var(--shadow-brutal-sm)",
-          textDecoration: "none",
-        }}
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      {/* Back Button */}
+      <div className="mb-6">
+        <Link
+          href="/student"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-150 active:translate-y-[1px]"
+          style={{
+            background: "var(--surface-1)",
+            color: "var(--foreground)",
+            border: "2px solid var(--card-border)",
+            boxShadow: "var(--shadow-brutal-sm)",
+            textDecoration: "none",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--accent)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--card-border)";
+          }}
         >
-          <line x1="19" y1="12" x2="5" y2="12" />
-          <polyline points="12 19 5 12 12 5" />
-        </svg>
-        Back to Dashboard
-      </Link>
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            strokeWidth="2.5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          Back to Home
+        </Link>
+      </div>
 
       <h1 className="text-2xl font-bold mb-6" style={{ color: "var(--foreground)" }}>
         Company Rating Manager
@@ -221,7 +230,9 @@ export default function RatingManager() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {Object.entries(ratings)
               .sort(([a], [b]) => a.localeCompare(b))
-              .map(([company, rating]) => (
+              .map(([company, rating]) => {
+                const starColor = rating > 4 ? "var(--success)" : rating >= 3 ? "var(--warning)" : "var(--error)";
+                return (
                 <div
                   key={company}
                   className="p-3 rounded-md border"
@@ -245,8 +256,8 @@ export default function RatingManager() {
                           key={star}
                           className="w-3 h-3"
                           viewBox="0 0 24 24"
-                          fill={rating >= star ? "var(--accent)" : "var(--card-border)"}
-                          stroke={rating >= star ? "var(--accent)" : "var(--card-border)"}
+                          fill={rating >= star ? starColor : "var(--card-border)"}
+                          stroke={rating >= star ? starColor : "var(--card-border)"}
                           strokeWidth="1"
                         >
                           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -254,14 +265,14 @@ export default function RatingManager() {
                       ))}
                       <span
                         className="text-xs font-bold ml-1"
-                        style={{ color: "var(--accent)" }}
+                        style={{ color: starColor }}
                       >
                         {rating.toFixed(1)}
                       </span>
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
           </div>
         )}
       </div>

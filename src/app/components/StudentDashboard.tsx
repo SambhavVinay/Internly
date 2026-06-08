@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import AccountButton from "./AccountButton";
 import JobCard from "./JobCard";
 import StudentSchoolFilter from "./StudentSchoolFilter";
 import ThemeToggle from "./ThemeToggle";
 import type { Job } from "./InternshipDashboard";
+import AcademicNotice from "./AcademicNotice";
+import Footer from "./Footer";
+import Image from "next/image";
 
 // Python scraper backend — used for /rate-companies and similar calls
 const SCRAPER_API =
   typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:8000"
     : process.env.NEXT_PUBLIC_API_URL ||
-      "https://oh-internscrapper-oppurtunityhub.hf.space";
+    "https://oh-internscrapper-oppurtunityhub.hf.space";
 
 interface TimeframeData {
   jobs: Job[];
@@ -43,12 +46,56 @@ export default function StudentDashboard() {
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
-  const [viewedJobIds, setViewedJobIds] = useState<number[]>([]);
   const [companyRatings, setCompanyRatings] = useState<Record<string, number>>(
     {},
   );
   const [ratingsLoading, setRatingsLoading] = useState(false);
   const [ratingsError, setRatingsError] = useState("");
+  const [openedJobIds, setOpenedJobIds] = useState<number[]>([]);
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+  const [isTimelinePinned, setIsTimelinePinned] = useState(false);
+  const timelineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTimelineEnter = () => {
+    if (timelineTimeoutRef.current) {
+      clearTimeout(timelineTimeoutRef.current);
+      timelineTimeoutRef.current = null;
+    }
+    setIsTimelineOpen(true);
+  };
+
+  const handleTimelineLeave = () => {
+    if (isTimelinePinned) return;
+    if (timelineTimeoutRef.current) {
+      clearTimeout(timelineTimeoutRef.current);
+    }
+    timelineTimeoutRef.current = setTimeout(() => {
+      setIsTimelineOpen(false);
+    }, 200);
+  };
+
+  const handleToggleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isTimelinePinned) {
+      setIsTimelinePinned(false);
+      setIsTimelineOpen(false);
+    } else {
+      setIsTimelinePinned(true);
+      setIsTimelineOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timelineTimeoutRef.current) {
+        clearTimeout(timelineTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleJobOpened = (jobId: number) => {
+    setOpenedJobIds((prev) => (prev.includes(jobId) ? prev : [...prev, jobId]));
+  };
 
   // Every unique school name across every timeframe in the current payload,
   // sorted alphabetically, along with counts. Drives the filter dropdown options.
@@ -158,9 +205,8 @@ export default function StudentDashboard() {
         throw new Error(`Failed to fetch data: ${response.status}`);
       }
       const result = await response.json();
-      const { jobsOpened, ...dashboardData } = result;
-      setData(dashboardData);
-      setViewedJobIds(jobsOpened || []);
+      setData(result);
+      setOpenedJobIds(result.openedJobIds || []);
       setLastUpdated(new Date());
       setError("");
     } catch (err) {
@@ -195,18 +241,20 @@ export default function StudentDashboard() {
           borderBottom: "2px solid var(--card-border)",
         }}
       >
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black"
               style={{
-                background: "var(--accent)",
                 color: "#ffffff",
-                border: "2px solid var(--card-border)",
-                boxShadow: "2px 2px 0 var(--shadow-color)",
               }}
             >
-              SD
+              <Image
+                src="/internly.jpeg"
+                alt="Internly Logo"
+                width={100}
+                height={100}
+              />
             </div>
             <div>
               <h1
@@ -224,7 +272,7 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-3">
             {/* Rating Manager Link */}
             <a
               href="/ratings"
@@ -310,6 +358,9 @@ export default function StudentDashboard() {
         </div>
       </header>
 
+      {/* ── Academic Notice ──────────────────────────── */}
+      <AcademicNotice />
+
       {/* ── Main Content ────────────────────────────── */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
         {/* Controls row: last-updated timestamp + school filter */}
@@ -329,64 +380,6 @@ export default function StudentDashboard() {
               counts={schoolCounts}
               totalJobs={totalJobs}
             />
-          </div>
-        )}
-
-        {/* Jump to Timeframe controls (Fixed Sidebar) */}
-        {data && (
-          <div
-            className={`fixed right-4 top-36 z-40 hidden md:flex flex-col gap-3 p-4 rounded-xl transition-opacity duration-300 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}
-            style={{
-              background: "var(--card)",
-              border: "2px solid var(--card-border)",
-              boxShadow: "var(--shadow-brutal)",
-              width: "160px",
-            }}
-          >
-            <div className="flex items-center justify-center gap-1.5 text-[10px] font-black tracking-wider text-center" style={{ color: "var(--muted)" }}>
-              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              TIMEFRAMES
-            </div>
-            <div className="flex flex-col gap-2">
-              {[
-                { id: "1_hour", label: "Last Hour", count: filteredData?.["1_hour"]?.count || 0 },
-                { id: "2_hours", label: "1-2h Ago", count: filteredData?.["2_hours"]?.count || 0 },
-                { id: "5_hours", label: "2-5h Ago", count: filteredData?.["5_hours"]?.count || 0 },
-                { id: "24_hours", label: "5-24h Ago", count: filteredData?.["24_hours"]?.count || 0 },
-                { id: "1_week", label: "1-7d Ago", count: filteredData?.["1_week"]?.count || 0 },
-                { id: "1_month", label: "1-4w Ago", count: filteredData?.["1_month"]?.count || 0 },
-              ].map((tf) => (
-                <button
-                  key={tf.id}
-                  onClick={() => {
-                    const el = document.getElementById(`section-${tf.id}`);
-                    if (el) {
-                      el.scrollIntoView({ behavior: "smooth" });
-                    }
-                  }}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-transform duration-150 active:translate-y-[1px] cursor-pointer"
-                  style={{
-                    background: "var(--surface-1)",
-                    color: "var(--foreground)",
-                    border: "2px solid var(--card-border)",
-                    boxShadow: "var(--shadow-brutal-sm)",
-                  }}
-                >
-                  <span className="truncate">{tf.label}</span>
-                  <span
-                    className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums font-mono shrink-0"
-                    style={{
-                      background: "var(--surface-2)",
-                      color: "var(--muted)",
-                    }}
-                  >
-                    {tf.count}
-                  </span>
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
@@ -490,7 +483,7 @@ export default function StudentDashboard() {
               <section
                 key={section.id}
                 id={`section-${section.id}`}
-                style={{ scrollMarginTop: "100px" }}
+                style={{ scrollMarginTop: "90px" }}
               >
                 <div className="flex items-center gap-3 mb-6">
                   <div
@@ -543,12 +536,6 @@ export default function StudentDashboard() {
                         key={`${section.id}-${i}`}
                         job={job}
                         index={i}
-                        viewed={job.id ? viewedJobIds.includes(job.id) : false}
-                        onViewed={(jobId) => {
-                          setViewedJobIds((prev) =>
-                            prev.includes(jobId) ? prev : [...prev, jobId]
-                          );
-                        }}
                         rating={
                           job.company
                             ? (companyRatings[job.company] ??
@@ -556,6 +543,8 @@ export default function StudentDashboard() {
                               undefined)
                             : undefined
                         }
+                        isViewed={job.id ? openedJobIds.includes(job.id) : false}
+                        onViewed={() => job.id && handleJobOpened(job.id)}
                       />
                     ))}
                   </div>
@@ -656,6 +645,179 @@ export default function StudentDashboard() {
             </div>
           )}
       </main>
+
+      {/* ── Timeframe Sidebar Panel ── */}
+      <aside
+        onMouseEnter={handleTimelineEnter}
+        onMouseLeave={handleTimelineLeave}
+        className={`fixed right-0 top-0 bottom-0 h-screen z-[100] flex flex-col transition-transform duration-300 ease-in-out ${isTimelineOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+        style={{
+          background: "var(--card)",
+          borderLeft: "2px solid var(--card-border)",
+          boxShadow: isTimelineOpen ? "var(--shadow-brutal-lg)" : "none",
+          width: "280px",
+        }}
+      >
+        {/* Floating Toggle Button (attached to the sidebar) */}
+        <button
+          onClick={handleToggleButtonClick}
+          className="absolute left-0 top-[12%] -translate-x-full -translate-y-1/2 hidden lg:flex items-center gap-2 px-3.5 py-2.5 rounded-l-xl text-xs font-black transition-all duration-200 z-40 cursor-pointer"
+          style={{
+            background: "var(--accent)",
+            color: "#ffffff",
+            border: "2px solid var(--card-border)",
+            borderRight: "none",
+            boxShadow: "-2px 2px 0 var(--shadow-color)",
+          }}
+        >
+          <svg
+            className={`w-4 h-4 ${isTimelinePinned ? "" : "animate-breathe"}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            strokeWidth="2.5"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Timeline{isTimelinePinned ? "" : ""}
+        </button>
+
+        {/* Sidebar Header */}
+        <div
+          className="flex items-center justify-between px-4 py-4"
+          style={{ borderBottom: "2px solid var(--card-border)" }}
+        >
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-4 h-4 text-[var(--accent)]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2.5"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V12h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-bold" style={{ color: "var(--foreground)" }}>
+              Timeline Navigation
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setIsTimelineOpen(false);
+              setIsTimelinePinned(false);
+            }}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold transition-transform duration-150 active:translate-y-[1px] cursor-pointer"
+            style={{
+              background: "var(--surface-1)",
+              border: "2px solid var(--card-border)",
+              color: "var(--foreground)",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Sidebar Body */}
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+          {[
+            { id: "1_hour", label: "Last Hour" },
+            { id: "2_hours", label: "1 - 2 Hours" },
+            { id: "5_hours", label: "2 - 5 Hours" },
+            { id: "24_hours", label: "5 - 24 Hours" },
+            { id: "1_week", label: "1 - 7 Days" },
+            { id: "1_month", label: "1 - 4 Weeks" },
+          ].map((tf) => {
+            const count = filteredData?.[tf.id as keyof StudentDashboardData]?.count ?? 0;
+            return (
+              <button
+                key={tf.id}
+                onClick={() => {
+                  const el = document.getElementById(`section-${tf.id}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+                className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-all duration-150 active:translate-y-[1px] cursor-pointer"
+                style={{
+                  background: "var(--surface-1)",
+                  color: "var(--foreground)",
+                  border: "2px solid var(--card-border)",
+                  boxShadow: "var(--shadow-brutal-sm)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--accent)";
+                  e.currentTarget.style.color = "var(--accent)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--card-border)";
+                  e.currentTarget.style.color = "var(--foreground)";
+                }}
+              >
+                <span className="truncate">{tf.label}</span>
+                <span
+                  className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold shrink-0"
+                  style={{
+                    background: count > 0 ? "var(--accent-dim)" : "var(--surface-2)",
+                    color: count > 0 ? "var(--accent)" : "var(--muted)",
+                    border: `1.5px solid ${count > 0 ? "var(--accent)" : "var(--card-border)"}`,
+                  }}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Sidebar Footer */}
+        <div
+          className="p-4"
+          style={{ borderTop: "2px solid var(--card-border)" }}
+        >
+          <button
+            onClick={() => {
+              const el = document.getElementById("footer");
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            }}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold text-center transition-all duration-150 active:translate-y-[1px] cursor-pointer"
+            style={{
+              background: "var(--surface-1)",
+              color: "var(--muted)",
+              border: "2px solid var(--card-border)",
+              boxShadow: "var(--shadow-brutal-sm)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--accent)";
+              e.currentTarget.style.color = "var(--accent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--card-border)";
+              e.currentTarget.style.color = "var(--muted)";
+            }}
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2.5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Privacy Policy
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Footer ──────────────────────────────────── */}
+      <Footer />
     </div>
   );
 }
