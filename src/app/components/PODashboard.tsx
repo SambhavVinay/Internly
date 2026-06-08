@@ -42,17 +42,18 @@ const TIMEFRAME_IDS = [
   "1_month",
 ] as const satisfies readonly (keyof StudentDashboardData)[];
 
-export default function StudentDashboard() {
+export default function PODashboard() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userRole = (session?.user as any)?.role as string | undefined;
 
+  // Enforce PO-only access client-side
   useEffect(() => {
-    if (userRole === "PO") {
-      router.replace("/PO");
+    if (!isPending && (!session || userRole !== "PO")) {
+      router.replace("/student");
     }
-  }, [userRole, router]);
+  }, [session, userRole, isPending, router]);
 
   const [data, setData] = useState<StudentDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -244,6 +245,14 @@ export default function StudentDashboard() {
     });
   };
 
+  if (isPending || !session || userRole !== "PO") {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-screen">
+        <div className="skeleton h-12 w-48" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col flex-1 min-h-screen">
       {/* ── Header ──────────────────────────────────── */}
@@ -274,7 +283,7 @@ export default function StudentDashboard() {
                 className="text-base font-bold tracking-tight"
                 style={{ color: "var(--foreground)" }}
               >
-                Student Dashboard
+                PO Dashboard
               </h1>
               <p
                 className="text-xs font-medium"
@@ -558,7 +567,7 @@ export default function StudentDashboard() {
                         }
                         isViewed={job.id ? openedJobIds.includes(job.id) : false}
                         onViewed={() => job.id && handleJobOpened(job.id)}
-                        userRole={userRole}
+                        userRole="PO"
                       />
                     ))}
                   </div>
@@ -694,7 +703,7 @@ export default function StudentDashboard() {
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Timeline{isTimelinePinned ? "" : ""}
+          Timeline
         </button>
 
         {/* Sidebar Header */}

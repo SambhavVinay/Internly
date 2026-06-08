@@ -9,6 +9,8 @@ interface JobCardProps {
   rating?: number; // 1.0–5.0, shown as stars; omit for no stars
   isViewed?: boolean;
   onViewed?: () => void;
+  /** Role of the currently logged-in user. Only 'PO' can see hiring team contacts. */
+  userRole?: string | null;
 }
 
 // Renders up to 5 stars (filled / half / empty) for a 1–5 float rating.
@@ -104,7 +106,8 @@ function useTimeAgo(postedDatetime?: string | null, fallback?: string | null) {
   return timeAgo;
 }
 
-export default function JobCard({ job, index, rating, isViewed, onViewed }: JobCardProps) {
+export default function JobCard({ job, index, rating, isViewed, onViewed, userRole }: JobCardProps) {
+  const canSeeContact = userRole === "PO";
   const staggerClass = `stagger-${Math.min(index + 1, 10)}`;
   const timeAgo = useTimeAgo(job.posted_datetime, job.posted);
   const [showAllPrograms, setShowAllPrograms] = useState(false);
@@ -291,8 +294,8 @@ export default function JobCard({ job, index, rating, isViewed, onViewed }: JobC
         </div>
       )}
 
-      {/* Hiring Team / Contact Details */}
-      {job.contact_details && job.contact_details.length > 0 && (
+      {/* Hiring Team / Contact Details — PO and admin only */}
+      {canSeeContact && job.contact_details && job.contact_details.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mb-4">
           <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>
             👤 Contact:

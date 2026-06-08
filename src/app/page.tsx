@@ -19,7 +19,9 @@ function LoginCard() {
   useEffect(() => {
     setMounted(true);
     if (!isPending && session) {
-      router.replace(redirectTo);
+      const role = (session.user as any)?.role;
+      const destination = redirectTo === "/student" && role === "PO" ? "/PO" : redirectTo;
+      router.replace(destination);
     }
   }, [isPending, session, redirectTo, router]);
 

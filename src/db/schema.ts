@@ -80,6 +80,7 @@ export const user = pgTable("user", {
   jobsOpened: jsonb("jobs_opened")
     .$type<number[]>()
     .default([]),
+  roles: text("roles").notNull().default("student"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

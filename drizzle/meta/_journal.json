@@ -43,6 +43,13 @@
       "when": 1780475251394,
       "tag": "0005_curly_puppet_master",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780907179604,
+      "tag": "0006_short_gertrude_yorkes",
+      "breakpoints": true
     }
   ]
 }

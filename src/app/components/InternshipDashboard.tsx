@@ -11,6 +11,7 @@ import ThemeToggle from "./ThemeToggle";
 import AcademicNotice from "./AcademicNotice";
 import Footer from "./Footer";
 import Image from "next/image";
+import { useSession } from "@/lib/auth-client";
 
 // All scraping/admin actions go directly to the Python backend on HuggingFace Spaces
 const API_BASE =
@@ -37,6 +38,10 @@ export interface Job {
 type ScrapeStatus = "idle" | "loading" | "success" | "error";
 
 export default function InternshipDashboard() {
+  const { data: session } = useSession();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (session?.user as any)?.role as string | undefined;
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [status, setStatus] = useState<ScrapeStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -242,7 +247,7 @@ export default function InternshipDashboard() {
                     );
                     return prev.map((job) =>
                       job.link && updateMap.has(job.link)
-                        ? { ...job, contact_details: updateMap.get(job.link) }
+                        ? { ...job, contact_details: updateMap.get(job.link) as Job["contact_details"] }
                         : job,
                     );
                   });
@@ -975,6 +980,7 @@ export default function InternshipDashboard() {
                   job={job}
                   index={i}
                   rating={job.company ? companyRatings[job.company] : undefined}
+                  userRole={userRole}
                 />
               ))}
 

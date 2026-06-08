@@ -31,6 +31,16 @@ export const auth = betterAuth({
     },
   }),
 
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        defaultValue: "student",
+        fieldName: "roles",
+      },
+    },
+  },
+
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,

@@ -47,6 +47,7 @@ export interface JobPayload {
   scraped_at?: string | null;
   keywords?: string | null;
   company_rating?: number | null;
+  contact_details?: Array<{ name: string; url: string } | string>;
 }
 
 /**
@@ -148,6 +149,7 @@ function rowToPayload(row: ScrapedJob): JobPayload {
     scraped_at: row.scrapedAt ? row.scrapedAt.toISOString() : null,
     keywords: row.keywords,
     company_rating: row.companyRating,
+    contact_details: row.contactDetails as Array<{ name: string; url: string } | string> | undefined,
   };
 }
 
