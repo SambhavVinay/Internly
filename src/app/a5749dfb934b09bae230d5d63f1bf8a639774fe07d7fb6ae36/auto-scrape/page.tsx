@@ -6,7 +6,7 @@ const API_BASE =
   typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:8000"
     : process.env.NEXT_PUBLIC_API_URL ||
-      "https://oh-internscrapper-oppurtunityhub.hf.space";
+      "https://oh-internscrapper-internly.hf.space";
 
 const TOTAL_SCHOOLS = 8;
 const ALL_SCHOOLS = [
