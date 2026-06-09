@@ -47,6 +47,8 @@ export default function PODashboard() {
   const { data: session, isPending } = useSession();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userRole = (session?.user as any)?.role as string | undefined;
+  const userEmail = session?.user?.email ?? null;
+  const userName = session?.user?.name ?? null;
 
   // Enforce PO-only access client-side
   useEffect(() => {
@@ -568,6 +570,8 @@ export default function PODashboard() {
                         isViewed={job.id ? openedJobIds.includes(job.id) : false}
                         onViewed={() => job.id && handleJobOpened(job.id)}
                         userRole="PO"
+                        userEmail={userEmail}
+                        userName={userName}
                       />
                     ))}
                   </div>

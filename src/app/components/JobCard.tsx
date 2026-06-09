@@ -11,6 +11,10 @@ interface JobCardProps {
   onViewed?: () => void;
   /** Role of the currently logged-in user. Only 'PO' can see hiring team contacts. */
   userRole?: string | null;
+  /** Email of the logged-in user — used to pick the right sender name. */
+  userEmail?: string | null;
+  /** Display name of the logged-in user — shown as sender unless overridden. */
+  userName?: string | null;
 }
 
 // Renders up to 5 stars (filled / half / empty) for a 1–5 float rating.
@@ -106,11 +110,158 @@ function useTimeAgo(postedDatetime?: string | null, fallback?: string | null) {
   return timeAgo;
 }
 
-export default function JobCard({ job, index, rating, isViewed, onViewed, userRole }: JobCardProps) {
+// Build the outreach message (kept under 250 chars)
+function buildMessage(contactName: string, jobTitle: string, senderName: string): string {
+  // Use first name of the contact only to save space
+  const firstName = contactName.split(" ")[0];
+  // Truncate role if very long
+  const role = jobTitle && jobTitle.length > 40 ? jobTitle.slice(0, 37) + "\u2026" : (jobTitle || "the role");
+  const msg = `Hi ${firstName}, saw your post for ${role}. I'm ${senderName} from RV University, Bengaluru. We have students ready for similar roles and can share profiles immediately. Would love to connect!`;
+  return msg.slice(0, 250);
+}
+
+interface MessageModalProps {
+  name: string;
+  jobTitle: string;
+  senderName: string;
+  onClose: () => void;
+}
+
+function MessageModal({ name, jobTitle, senderName, onClose }: MessageModalProps) {
+  const message = buildMessage(name, jobTitle, senderName);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+      const el = document.createElement("textarea");
+      el.value = message;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md rounded-2xl p-6 animate-fade-in-up"
+        style={{
+          background: "var(--card)",
+          border: "2px solid var(--card-border)",
+          boxShadow: "var(--shadow-brutal-lg)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: "var(--accent-dim)", border: "2px solid var(--accent)" }}
+            >
+              <svg className="w-4 h-4" fill="var(--accent)" viewBox="0 0 24 24">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+              </svg>
+            </div>
+            <span className="text-sm font-bold" style={{ color: "var(--foreground)" }}>
+              Message for {name}
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold transition-transform duration-150 active:translate-y-[1px] cursor-pointer"
+            style={{ background: "var(--surface-1)", border: "2px solid var(--card-border)", color: "var(--foreground)" }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Message body */}
+        <div
+          className="rounded-xl p-4 mb-4 text-sm leading-relaxed"
+          style={{
+            background: "var(--surface-1)",
+            border: "1.5px solid var(--card-border)",
+            color: "var(--foreground)",
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {message}
+        </div>
+
+        {/* Character count */}
+        <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
+          {message.length} / 250 characters
+        </p>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleCopy}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 active:translate-y-[1px] cursor-pointer"
+            style={{
+              background: copied ? "rgba(5,150,105,0.12)" : "var(--accent-dim)",
+              color: copied ? "var(--success)" : "var(--accent)",
+              border: `2px solid ${copied ? "var(--success)" : "var(--accent)"}`,
+              boxShadow: "var(--shadow-brutal-sm)",
+            }}
+          >
+            {copied ? (
+              <>
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy Message
+              </>
+            )}
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 active:translate-y-[1px] cursor-pointer"
+            style={{
+              background: "var(--surface-1)",
+              color: "var(--muted)",
+              border: "2px solid var(--card-border)",
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DIRECTOR_EMAIL = "director.placements@rvu.edu.in";
+const DIRECTOR_DISPLAY_NAME = "Dr. Phani Kumar Pullela";
+
+export default function JobCard({ job, index, rating, isViewed, onViewed, userRole, userEmail, userName }: JobCardProps) {
   const canSeeContact = userRole === "PO";
+  // Determine sender name: special override for the director's email, otherwise use the session user's name
+  const senderName = userEmail === DIRECTOR_EMAIL ? DIRECTOR_DISPLAY_NAME : (userName || "Dr. Phani Kumar Pullela");
   const staggerClass = `stagger-${Math.min(index + 1, 10)}`;
   const timeAgo = useTimeAgo(job.posted_datetime, job.posted);
   const [showAllPrograms, setShowAllPrograms] = useState(false);
+  const [messageModal, setMessageModal] = useState<{ name: string } | null>(null);
 
   const handleJobClick = async () => {
     if (job.id) {
@@ -294,7 +445,7 @@ export default function JobCard({ job, index, rating, isViewed, onViewed, userRo
         </div>
       )}
 
-      {/* Hiring Team / Contact Details — PO and admin only */}
+      {/* Hiring Team / Contact Details — PO only */}
       {canSeeContact && job.contact_details && job.contact_details.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mb-4">
           <span className="text-xs font-semibold" style={{ color: "var(--muted)" }}>
@@ -310,35 +461,72 @@ export default function JobCard({ job, index, rating, isViewed, onViewed, userRo
               .replace(/-\d+$/, "")
               .split("-").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
             return (
-              <a
-                key={i}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={`View ${name}'s LinkedIn profile`}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150"
-                style={{
-                  background: "var(--accent-dim)",
-                  color: "var(--accent)",
-                  border: "1.5px solid var(--accent)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "var(--accent)";
-                  e.currentTarget.style.color = "#ffffff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "var(--accent-dim)";
-                  e.currentTarget.style.color = "var(--accent)";
-                }}
-              >
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-                {name}
-              </a>
+              <div key={i} className="flex items-center gap-1">
+                {/* LinkedIn link */}
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`View ${name}'s LinkedIn profile`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all duration-150"
+                  style={{
+                    background: "var(--accent-dim)",
+                    color: "var(--accent)",
+                    border: "1.5px solid var(--accent)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--accent)";
+                    e.currentTarget.style.color = "#ffffff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "var(--accent-dim)";
+                    e.currentTarget.style.color = "var(--accent)";
+                  }}
+                >
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                  {name}
+                </a>
+                {/* Message button */}
+                <button
+                  type="button"
+                  onClick={() => setMessageModal({ name })}
+                  title={`Compose message for ${name}`}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all duration-150 active:translate-y-[1px] cursor-pointer"
+                  style={{
+                    background: "var(--surface-1)",
+                    color: "var(--muted)",
+                    border: "1.5px solid var(--card-border)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--accent)";
+                    e.currentTarget.style.color = "var(--accent)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--card-border)";
+                    e.currentTarget.style.color = "var(--muted)";
+                  }}
+                >
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                  </svg>
+                  Message
+                </button>
+              </div>
             );
           })}
         </div>
+      )}
+
+      {/* Message Modal */}
+      {messageModal && (
+        <MessageModal
+          name={messageModal.name}
+          jobTitle={job.title ?? ""}
+          senderName={senderName}
+          onClose={() => setMessageModal(null)}
+        />
       )}
 
       {/* CTA */}
