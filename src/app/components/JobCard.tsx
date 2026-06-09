@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { Job } from "./InternshipDashboard";
 
 interface JobCardProps {
@@ -73,20 +74,20 @@ function useTimeAgo(postedDatetime?: string | null, fallback?: string | null) {
     const calculateTimeAgo = () => {
       const now = new Date();
       const posted = new Date(postedDatetime);
-      
+
       // Treat invalid dates or date-only strings (YYYY-MM-DD) by falling back to the original string
       if (isNaN(posted.getTime()) || (postedDatetime && postedDatetime.length <= 10)) {
         setTimeAgo(fallback || "");
         return;
       }
-      
+
       const diffMs = now.getTime() - posted.getTime();
-      
+
       if (diffMs < 0) {
         setTimeAgo("Just now");
         return;
       }
-      
+
       const diffMins = Math.floor(diffMs / 60000);
       const diffHours = Math.floor(diffMins / 60);
       const diffDays = Math.floor(diffHours / 24);
@@ -110,14 +111,14 @@ function useTimeAgo(postedDatetime?: string | null, fallback?: string | null) {
   return timeAgo;
 }
 
-// Build the outreach message (kept under 250 chars)
+// Build the outreach message (kept under 200 chars)
 function buildMessage(contactName: string, jobTitle: string, senderName: string): string {
   // Use first name of the contact only to save space
   const firstName = contactName.split(" ")[0];
   // Truncate role if very long
   const role = jobTitle && jobTitle.length > 40 ? jobTitle.slice(0, 37) + "\u2026" : (jobTitle || "the role");
-  const msg = `Hi ${firstName}, saw your post for ${role}. I'm ${senderName} from RV University, Bengaluru. We have students ready for similar roles and can share profiles immediately. Would love to connect!`;
-  return msg.slice(0, 250);
+  const msg = `Hi ${firstName}, I am ${senderName} from RV University. Noticed your ${role} opening — we have strong candidates ready to go. Happy to share profiles right away. Let's connect!`;
+  return msg.slice(0, 200);
 }
 
 interface MessageModalProps {
@@ -129,17 +130,18 @@ interface MessageModalProps {
 
 function MessageModal({ name, jobTitle, senderName, onClose }: MessageModalProps) {
   const message = buildMessage(name, jobTitle, senderName);
+  const [editedMessage, setEditedMessage] = useState(message);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(message);
+      await navigator.clipboard.writeText(editedMessage);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // fallback
       const el = document.createElement("textarea");
-      el.value = message;
+      el.value = editedMessage;
       document.body.appendChild(el);
       el.select();
       document.execCommand("copy");
@@ -149,9 +151,9 @@ function MessageModal({ name, jobTitle, senderName, onClose }: MessageModalProps
     }
   };
 
-  return (
+  const overlay = (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
       onClick={onClose}
     >
@@ -172,7 +174,7 @@ function MessageModal({ name, jobTitle, senderName, onClose }: MessageModalProps
               style={{ background: "var(--accent-dim)", border: "2px solid var(--accent)" }}
             >
               <svg className="w-4 h-4" fill="var(--accent)" viewBox="0 0 24 24">
-                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
               </svg>
             </div>
             <span className="text-sm font-bold" style={{ color: "var(--foreground)" }}>
@@ -188,22 +190,26 @@ function MessageModal({ name, jobTitle, senderName, onClose }: MessageModalProps
           </button>
         </div>
 
-        {/* Message body */}
-        <div
-          className="rounded-xl p-4 mb-4 text-sm leading-relaxed"
+        {/* Editable message textarea */}
+        <textarea
+          value={editedMessage}
+          onChange={(e) => setEditedMessage(e.target.value)}
+          rows={6}
+          className="w-full rounded-xl p-4 mb-2 text-sm leading-relaxed resize-none outline-none transition-colors duration-150"
           style={{
             background: "var(--surface-1)",
-            border: "1.5px solid var(--card-border)",
+            border: `1.5px solid ${editedMessage.length > 200 ? "var(--error)" : "var(--card-border)"}`,
             color: "var(--foreground)",
-            whiteSpace: "pre-wrap",
+            fontFamily: "inherit",
           }}
-        >
-          {message}
-        </div>
+        />
 
-        {/* Character count */}
-        <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
-          {message.length} / 250 characters
+        {/* Live character count */}
+        <p
+          className="text-xs mb-4 text-right"
+          style={{ color: editedMessage.length > 200 ? "var(--error)" : "var(--muted)" }}
+        >
+          {editedMessage.length} / 200 characters
         </p>
 
         {/* Actions */}
@@ -221,7 +227,7 @@ function MessageModal({ name, jobTitle, senderName, onClose }: MessageModalProps
             {copied ? (
               <>
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
                 </svg>
                 Copied!
               </>
@@ -249,6 +255,8 @@ function MessageModal({ name, jobTitle, senderName, onClose }: MessageModalProps
       </div>
     </div>
   );
+
+  return typeof window !== "undefined" ? createPortal(overlay, document.body) : null;
 }
 
 const DIRECTOR_EMAIL = "director.placements@rvu.edu.in";
@@ -256,8 +264,10 @@ const DIRECTOR_DISPLAY_NAME = "Dr. Phani Kumar Pullela";
 
 export default function JobCard({ job, index, rating, isViewed, onViewed, userRole, userEmail, userName }: JobCardProps) {
   const canSeeContact = userRole === "PO";
-  // Determine sender name: special override for the director's email, otherwise use the session user's name
-  const senderName = userEmail === DIRECTOR_EMAIL ? DIRECTOR_DISPLAY_NAME : (userName || "Dr. Phani Kumar Pullela");
+  // For non-director POs, use only the first name (e.g. "PUNEETHA S SHANKAR" → "PUNEETHA")
+  const senderName = userEmail === DIRECTOR_EMAIL
+    ? DIRECTOR_DISPLAY_NAME
+    : (userName || "Dr. Phani Pullela").split(" ")[0];
   const staggerClass = `stagger-${Math.min(index + 1, 10)}`;
   const timeAgo = useTimeAgo(job.posted_datetime, job.posted);
   const [showAllPrograms, setShowAllPrograms] = useState(false);
@@ -484,7 +494,7 @@ export default function JobCard({ job, index, rating, isViewed, onViewed, userRo
                   }}
                 >
                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
                   {name}
                 </a>
@@ -509,7 +519,7 @@ export default function JobCard({ job, index, rating, isViewed, onViewed, userRo
                   }}
                 >
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
                   </svg>
                   Message
                 </button>
