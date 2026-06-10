@@ -15,6 +15,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const isApproved = (session.user as any).isApproved as boolean | undefined;
+    if (!isApproved) {
+      const { isEmailInAllowlist } = await import("@/lib/allowlist");
+      if (isEmailInAllowlist(session.user.email)) {
+        await db
+          .update(user)
+          .set({ isApproved: true })
+          .where(eq(user.id, session.user.id));
+      } else {
+        return NextResponse.json({ error: "Forbidden: Access pending approval" }, { status: 403 });
+      }
+    }
+
     const { jobId } = await request.json();
     if (typeof jobId !== "number") {
       return NextResponse.json({ error: "Invalid jobId" }, { status: 400 });

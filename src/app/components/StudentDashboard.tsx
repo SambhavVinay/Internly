@@ -11,6 +11,7 @@ import AcademicNotice from "./AcademicNotice";
 import Footer from "./Footer";
 import Image from "next/image";
 import { useSession } from "@/lib/auth-client";
+import { isEmailInAllowlist } from "@/lib/allowlist";
 
 // Python scraper backend — used for /rate-companies and similar calls
 const SCRAPER_API =
@@ -44,15 +45,25 @@ const TIMEFRAME_IDS = [
 
 export default function StudentDashboard() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userRole = (session?.user as any)?.role as string | undefined;
+  const user = session?.user as any;
+  const userRole = user?.role as string | undefined;
+  const isApproved = user?.isApproved as boolean | undefined;
+  const userEmail = user?.email as string | undefined;
 
   useEffect(() => {
-    if (userRole === "PO") {
-      router.replace("/PO");
+    if (isPending) return;
+    if (session?.user) {
+      if (!isApproved && !isEmailInAllowlist(userEmail)) {
+        router.replace("/pending");
+        return;
+      }
+      if (userRole === "PO") {
+        router.replace("/PO");
+      }
     }
-  }, [userRole, router]);
+  }, [session, isPending, isApproved, userEmail, userRole, router]);
 
   const [data, setData] = useState<StudentDashboardData | null>(null);
   const [loading, setLoading] = useState(true);

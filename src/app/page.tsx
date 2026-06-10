@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { signIn, useSession } from "@/lib/auth-client";
+import { isEmailInAllowlist } from "@/lib/allowlist";
 
 function LoginCard() {
   const router = useRouter();
@@ -19,7 +20,14 @@ function LoginCard() {
   useEffect(() => {
     setMounted(true);
     if (!isPending && session) {
-      const role = (session.user as any)?.role;
+      const user = session.user as any;
+      const isApproved = user?.isApproved as boolean | undefined;
+      const userEmail = user?.email as string | undefined;
+      if (!isApproved && !isEmailInAllowlist(userEmail)) {
+        router.replace("/pending");
+        return;
+      }
+      const role = user?.role;
       const destination = redirectTo === "/student" && role === "PO" ? "/PO" : redirectTo;
       router.replace(destination);
     }

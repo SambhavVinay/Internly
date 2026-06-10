@@ -11,6 +11,7 @@ import AcademicNotice from "./AcademicNotice";
 import Footer from "./Footer";
 import Image from "next/image";
 import { useSession } from "@/lib/auth-client";
+import { isEmailInAllowlist } from "@/lib/allowlist";
 
 // Python scraper backend — used for /rate-companies and similar calls
 const SCRAPER_API =
@@ -50,9 +51,19 @@ export default function PODashboard() {
   const userEmail = session?.user?.email ?? null;
   const userName = session?.user?.name ?? null;
 
-  // Enforce PO-only access client-side
+  // Enforce PO-only and approval check client-side
   useEffect(() => {
-    if (!isPending && (!session || userRole !== "PO")) {
+    if (isPending) return;
+    if (!session?.user) {
+      router.replace("/student");
+      return;
+    }
+    const isApproved = (session.user as any).isApproved as boolean | undefined;
+    if (!isApproved && !isEmailInAllowlist(session.user.email)) {
+      router.replace("/pending");
+      return;
+    }
+    if (userRole !== "PO") {
       router.replace("/student");
     }
   }, [session, userRole, isPending, router]);

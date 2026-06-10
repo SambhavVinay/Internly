@@ -16,7 +16,20 @@ export async function GET() {
       const session = await auth.api.getSession({
         headers: await headers(),
       });
-      if (session?.user?.id) {
+      if (session?.user) {
+        const isApproved = (session.user as any).isApproved as boolean | undefined;
+        if (!isApproved) {
+          const { isEmailInAllowlist } = await import("@/lib/allowlist");
+          if (isEmailInAllowlist(session.user.email)) {
+            await db
+              .update(user)
+              .set({ isApproved: true })
+              .where(eq(user.id, session.user.id));
+          } else {
+            return NextResponse.json({ error: "Access pending approval" }, { status: 403 });
+          }
+        }
+
         const rows = await db
           .select({ jobsOpened: user.jobsOpened })
           .from(user)

@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 
 import { db } from "@/db";
 import { account, session, user, verification } from "@/db/schema";
+import { isEmailInAllowlist } from "./allowlist";
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error(
@@ -37,6 +38,32 @@ export const auth = betterAuth({
         type: "string",
         defaultValue: "student",
         fieldName: "roles",
+      },
+      isApproved: {
+        type: "boolean",
+        defaultValue: false,
+        fieldName: "isApproved",
+      },
+      waitlistConsent: {
+        type: "boolean",
+        defaultValue: false,
+        fieldName: "waitlistConsent",
+      },
+    },
+  },
+
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const approved = isEmailInAllowlist(user.email);
+          return {
+            data: {
+              ...user,
+              isApproved: approved,
+            },
+          };
+        },
       },
     },
   },

@@ -81,6 +81,8 @@ export const user = pgTable("user", {
     .$type<number[]>()
     .default([]),
   roles: text("roles").notNull().default("student"),
+  isApproved: boolean("is_approved").notNull().default(false),
+  waitlistConsent: boolean("waitlist_consent").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
