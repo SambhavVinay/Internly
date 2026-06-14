@@ -18,7 +18,7 @@ const API_BASE =
   typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:8000"
     : process.env.NEXT_PUBLIC_API_URL ||
-      "https://oh-internscrapper-internly.hf.space";
+      "https://oh-internscrapper-internly-backup.hf.space";
 const LOCAL_API = API_BASE;
 
 export interface Job {
