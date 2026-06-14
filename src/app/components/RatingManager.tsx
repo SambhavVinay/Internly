@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const API_BASE = typeof window !== "undefined" && window.location.hostname === "localhost"
   ? "http://localhost:8000"
-  : (process.env.NEXT_PUBLIC_API_URL || "https://oh-internscrapper-internly-backup.hf.space");
+  : (process.env.NEXT_PUBLIC_API_URL || "https://internscrapper-production.up.railway.app");
 
 interface CompanyRating {
   company: string;
