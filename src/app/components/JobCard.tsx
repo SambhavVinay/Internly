@@ -328,6 +328,18 @@ export default function JobCard({ job, index, rating, isViewed, onViewed, userRo
               {timeAgo}
             </span>
           )}
+          {job.source && (
+            <span
+              className="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap"
+              style={{
+                background: "var(--surface-1)",
+                color: "var(--foreground)",
+                border: "1.5px solid var(--card-border)",
+              }}
+            >
+              via {job.source}
+            </span>
+          )}
         </div>
       </div>
 

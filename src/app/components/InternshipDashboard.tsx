@@ -33,6 +33,7 @@ export interface Job {
   schools: string[];
   company_rating?: number | null; // persisted from DB after rating
   contact_details?: Array<{ name: string; url: string } | string>;
+  source?: string;
 }
 
 type ScrapeStatus = "idle" | "loading" | "success" | "error";
@@ -980,7 +981,7 @@ export default function InternshipDashboard() {
                   job={job}
                   index={i}
                   rating={job.company ? companyRatings[job.company] : undefined}
-                  userRole={userRole}
+                  userRole="PO" /* always show contacts in scraper dashboard */
                 />
               ))}
 
