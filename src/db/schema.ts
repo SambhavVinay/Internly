@@ -54,7 +54,7 @@ export const scrapedJobs = pgTable(
     companyRating: real("company_rating"),
 
     contactDetails: jsonb("contact_details")
-      .$type<string[]>()
+      .$type<any[]>()
       .default([]),
   },
   (table) => ({
