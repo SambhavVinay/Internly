@@ -273,6 +273,12 @@ export default function JobCard({ job, index, rating, isViewed, onViewed, userRo
   const [showAllPrograms, setShowAllPrograms] = useState(false);
   const [messageModal, setMessageModal] = useState<{ name: string } | null>(null);
 
+  let displaySource = job.source;
+  if (!displaySource && job.link) {
+    if (job.link.includes("linkedin.com")) displaySource = "LinkedIn";
+    else if (job.link.includes("adzuna")) displaySource = "Adzuna";
+    else if (job.link.includes("theirstack")) displaySource = "TheirStack";
+  }
   const handleJobClick = async () => {
     if (job.id) {
       if (onViewed) onViewed();
@@ -328,16 +334,16 @@ export default function JobCard({ job, index, rating, isViewed, onViewed, userRo
               {timeAgo}
             </span>
           )}
-          {job.source && (
+          {displaySource && (
             <span
               className="px-2 py-0.5 rounded-md text-xs font-bold whitespace-nowrap"
               style={{
-                background: "var(--surface-1)",
-                color: "var(--foreground)",
-                border: "1.5px solid var(--card-border)",
+                background: displaySource === "LinkedIn" ? "rgba(10,102,194,0.1)" : displaySource === "Adzuna" ? "rgba(34, 197, 94, 0.1)" : displaySource === "TheirStack" ? "rgba(168, 85, 247, 0.1)" : "var(--surface-1)",
+                color: displaySource === "LinkedIn" ? "#0A66C2" : displaySource === "Adzuna" ? "#16a34a" : displaySource === "TheirStack" ? "#9333ea" : "var(--foreground)",
+                border: `1.5px solid ${displaySource === "LinkedIn" ? "#0A66C2" : displaySource === "Adzuna" ? "#16a34a" : displaySource === "TheirStack" ? "#9333ea" : "var(--card-border)"}`,
               }}
             >
-              via {job.source}
+              via {displaySource}
             </span>
           )}
         </div>

@@ -308,6 +308,26 @@ export default function PODashboard() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center md:justify-end gap-3">
+            {/* Google Sheets Data Export Link */}
+            <a
+              href="https://docs.google.com/spreadsheets/d/1IXS7bNecE3oDES6tHz_odh8Ee9SDF3AZ5k7JRZ0NjGc/edit?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200"
+              style={{
+                background: "#0f9d58",
+                color: "#ffffff",
+                border: "2px solid #0b8043",
+                textDecoration: "none",
+              }}
+              title="View Scraped Data in Google Sheets"
+            >
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H5v-4h5v4zm0-6H5V7h5v4zm7 6h-5v-4h5v4zm0-6h-5V7h5v4z" />
+              </svg>
+              Data Sheet
+            </a>
+
             {/* Rating Manager Link */}
             <a
               href="/ratings"

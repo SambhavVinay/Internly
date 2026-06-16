@@ -10,6 +10,7 @@ import type { SchoolsData } from "./SchoolFilter";
 import ThemeToggle from "./ThemeToggle";
 import AcademicNotice from "./AcademicNotice";
 import Footer from "./Footer";
+import LinkedInSearchForm from "./LinkedInSearchForm";
 import Image from "next/image";
 import { useSession } from "@/lib/auth-client";
 
@@ -54,6 +55,10 @@ export default function InternshipDashboard() {
   const [totalSearches, setTotalSearches] = useState(0);
   const [deduplicatedCount, setDeduplicatedCount] = useState(0);
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
+
+  // Scrape mode toggle: "api" = Adzuna+TheirStack, "linkedin" = headless browser
+  type ScrapeMode = "api" | "linkedin";
+  const [scrapeMode, setScrapeMode] = useState<ScrapeMode>("api");
 
   // Company ratings — populated automatically after scraping finishes
   const [companyRatings, setCompanyRatings] = useState<Record<string, number>>(
@@ -361,6 +366,58 @@ export default function InternshipDashboard() {
     [processStream],
   );
 
+  // ── LinkedIn scrape handler ─────────────────────────────────────────────
+  const handleLinkedInScrape = useCallback(
+    async (filters: SearchFilters) => {
+      setStatus("loading");
+      setErrorMsg("");
+      setJobs([]);
+      setTotal(0);
+      setEngine("linkedin");
+      setScrapeUrl("");
+      setSelectedSchool(null);
+      setTotalSearches(0);
+      setDeduplicatedCount(0);
+      setStatusMessages([]);
+      setCompanyRatings({});
+      setRatingsElapsed(null);
+      setRatingsError("");
+      setRatingsLoading(false);
+
+      setLastQuery({ keywords: filters.keywords, location: "LinkedIn (Bengaluru)" });
+
+      const startTime = Date.now();
+
+      try {
+        const params = new URLSearchParams({
+          keywords: filters.keywords,
+          freshness: filters.freshness,
+        });
+        for (const wt of filters.work_types) params.append("work_types", wt);
+        for (const jt of filters.job_types) params.append("job_types", jt);
+
+        const res = await fetch(
+          `${API_BASE}/scrape-linkedin?${params.toString()}`,
+          { method: "POST" },
+        );
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => null);
+          throw new Error(err?.detail || `Server responded with ${res.status}`);
+        }
+
+        await processStream(res, startTime);
+      } catch (err: unknown) {
+        setElapsed(Math.round((Date.now() - startTime) / 1000));
+        setErrorMsg(
+          err instanceof Error ? err.message : "An unexpected error occurred",
+        );
+        setStatus("error");
+      }
+    },
+    [processStream],
+  );
+
   const reconnectToStream = useCallback(async () => {
     setStatus("loading");
     setErrorMsg("");
@@ -393,6 +450,36 @@ export default function InternshipDashboard() {
       })
       .catch((e) => console.error("Failed to check scrape status", e));
   }, [reconnectToStream]);
+
+  // Check LinkedIn scrape status on mount (only if in LinkedIn mode)
+  useEffect(() => {
+    if (scrapeMode !== "linkedin") return;
+    fetch(`${API_BASE}/scrape-linkedin/status`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.is_active || data.has_history) {
+          // Reconnect to LinkedIn stream
+          setStatus("loading");
+          setErrorMsg("");
+          setJobs([]);
+          setTotal(0);
+          setEngine("linkedin");
+          setSelectedSchool(null);
+          setTotalSearches(0);
+          setDeduplicatedCount(0);
+          setStatusMessages(["Reconnecting to LinkedIn search..."]);
+          const startTime = Date.now();
+          fetch(`${API_BASE}/scrape-linkedin/stream`)
+            .then((res) => {
+              if (!res.ok) throw new Error("Failed to reconnect");
+              return processStream(res, startTime);
+            })
+            .catch(() => setStatus("idle"));
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrapeMode]);
 
   return (
     <div className="flex flex-col flex-1 min-h-screen">
@@ -670,8 +757,47 @@ export default function InternshipDashboard() {
 
       {/* ── Main ────────────────────────────────────── */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-8">
-        {/* Search Form */}
-        <SearchForm onSubmit={handleScrape} isLoading={status === "loading"} />
+        {/* ── Scrape Mode Tabs ───────────────────────────── */}
+        <div className="flex gap-2 mb-5">
+          <button
+            type="button"
+            onClick={() => setScrapeMode("api")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200"
+            style={{
+              background: scrapeMode === "api" ? "var(--accent)" : "var(--surface-1)",
+              color: scrapeMode === "api" ? "#fff" : "var(--muted)",
+              border: `2px solid ${scrapeMode === "api" ? "var(--accent)" : "var(--card-border)"}`,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            Discover Opportunities
+          </button>
+          <button
+            type="button"
+            onClick={() => setScrapeMode("linkedin")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200"
+            style={{
+              background: scrapeMode === "linkedin" ? "#0A66C2" : "var(--surface-1)",
+              color: scrapeMode === "linkedin" ? "#fff" : "var(--muted)",
+              border: `2px solid ${scrapeMode === "linkedin" ? "#0A66C2" : "var(--card-border)"}`,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+            </svg>
+            Scrape via LinkedIn
+          </button>
+        </div>
+
+        {/* Search Form — conditional on scrapeMode */}
+        {scrapeMode === "api" ? (
+          <SearchForm onSubmit={handleScrape} isLoading={status === "loading"} />
+        ) : (
+          <LinkedInSearchForm onSubmit={handleLinkedInScrape} isLoading={status === "loading"} />
+        )}
 
         {/* ── Auto-Scrape Progress Panel ───────────────────────────────────── */}
         {(sweepStatus === "running" ||
