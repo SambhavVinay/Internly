@@ -53,6 +53,8 @@ export default function PODashboard() {
 
   // Enforce PO-only and approval check client-side
   useEffect(() => {
+    // TEMPORARY BYPASS: allow skip login
+    /*
     if (isPending) return;
     if (!session?.user) {
       router.replace("/student");
@@ -66,6 +68,7 @@ export default function PODashboard() {
     if (userRole !== "PO") {
       router.replace("/student");
     }
+    */
   }, [session, userRole, isPending, router]);
 
   const [data, setData] = useState<StudentDashboardData | null>(null);
@@ -258,6 +261,8 @@ export default function PODashboard() {
     });
   };
 
+  // TEMPORARY BYPASS: allow skip login
+  /*
   if (isPending || !session || userRole !== "PO") {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen">
@@ -265,6 +270,7 @@ export default function PODashboard() {
       </div>
     );
   }
+  */
 
   return (
     <div className="flex flex-col flex-1 min-h-screen">
@@ -344,6 +350,24 @@ export default function PODashboard() {
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
               Ratings
+            </a>
+
+            {/* GCC Listings Link */}
+            <a
+              href="/PO/gcc-listings"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200"
+              style={{
+                background: "var(--surface-1)",
+                color: "var(--foreground)",
+                border: "2px solid var(--card-border)",
+                textDecoration: "none",
+              }}
+              title="View GCC Listings"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
+              </svg>
+              GCC Listings
             </a>
 
             {/* Refresh Button */}

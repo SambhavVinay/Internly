@@ -1,38 +1,72 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
+import { Pool } from "pg";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  max: 3,
+});
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const location = searchParams.get("location"); // 'bangalore' | null
+
+  let query: string;
+  let params: string[];
+
+  if (location?.toLowerCase() === "bangalore") {
+    query = `
+      SELECT id, title, company, location, link, posted, posted_datetime,
+             experience_level, company_rating, contact_details, scraped_at
+      FROM gcc_jobs
+      WHERE LOWER(location) LIKE '%bangalore%'
+         OR LOWER(location) LIKE '%bengaluru%'
+      ORDER BY scraped_at DESC
+    `;
+    params = [];
+  } else {
+    query = `
+      SELECT id, title, company, location, link, posted, posted_datetime,
+             experience_level, company_rating, contact_details, scraped_at
+      FROM gcc_jobs
+      ORDER BY scraped_at DESC
+    `;
+    params = [];
+  }
+
   try {
-    const jobsFilePath = "C:\\Users\\Sambhav\\Desktop\\gcc-hunt\\web\\src\\data\\jobs.json";
-    const rawData = await fs.readFile(jobsFilePath, "utf8");
-    const gccJobs = JSON.parse(rawData);
+    const { rows } = await pool.query(query, params);
 
-    // Take the top 100 jobs to avoid sending a massive payload
-    const topJobs = gccJobs.slice(0, 100);
-
-    // Map to InternScrapper Job interface
-    const mappedJobs = topJobs.map((job: any, index: number) => ({
-      id: index + 1000000, // Generate a unique ID
-      title: job.title || null,
-      company: job.companyName || job.companyId || job.company || "Unknown Company",
-      location: job.location || job.city || "Unknown Location",
-      link: job.url || job.applyUrl || null,
-      posted: job.postedDate || job.createdAt || new Date().toISOString(),
-      posted_datetime: job.postedDate || job.createdAt || new Date().toISOString(),
-      programs: ["GCC"],
-      schools: [], // Not school specific
-      source: "GCC Hunt",
-      company_rating: null,
+    const jobs = rows.map((row, i) => ({
+      id:              row.id ?? i + 2000000,
+      title:           row.title,
+      company:         row.company,
+      location:        row.location,
+      link:            row.link,
+      posted:          row.posted,
+      posted_datetime: row.posted_datetime ? new Date(row.posted_datetime).toISOString() : null,
+      programs:        ["GCC"],
+      schools:         [],
+      source:          "GCC Hunt",
+      company_rating:  row.company_rating ?? null,
+      contact_details: row.contact_details ?? [],
     }));
 
-    return NextResponse.json({
-      jobs: mappedJobs,
-      count: mappedJobs.length,
-      totalCount: gccJobs.length
-    });
-  } catch (error) {
-    console.error("Failed to read GCC jobs:", error);
-    return NextResponse.json({ error: "Failed to load GCC jobs" }, { status: 500 });
+    return NextResponse.json({ jobs, count: jobs.length });
+  } catch (error: any) {
+    // gcc_jobs table might not exist yet (script hasn't run)
+    if (error?.code === "42P01") {
+      return NextResponse.json(
+        { error: "GCC jobs table not found. Run enrich_gcc_jobs.py first.", jobs: [], count: 0 },
+        { status: 503 }
+      );
+    }
+    console.error("gcc-jobs route error:", error);
+    return NextResponse.json(
+      { error: "Failed to load GCC jobs" },
+      { status: 500 }
+    );
   }
 }

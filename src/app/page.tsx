@@ -106,6 +106,21 @@ function LoginCard() {
         {submitting ? "Redirecting to Google…" : "Continue with Google"}
       </button>
 
+      {/* Temporary Skip Login Button */}
+      <button
+        type="button"
+        onClick={() => router.push("/PO")}
+        className="w-full flex items-center justify-center gap-3 px-4 py-3 mt-4 rounded-xl text-sm font-bold transition-transform duration-150 active:translate-y-[1px]"
+        style={{
+          background: "var(--surface-2)",
+          color: "var(--foreground)",
+          border: "2px dashed var(--card-border)",
+          boxShadow: "var(--shadow-brutal-sm)",
+        }}
+      >
+        Skip Login (Temp PO Access)
+      </button>
+
       <div className="flex items-center my-4">
         <div className="flex-grow border-t border-[var(--card-border)] opacity-20"></div>
         <span
