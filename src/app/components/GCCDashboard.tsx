@@ -131,7 +131,7 @@ export default function GCCDashboard() {
             </button>
 
             <button
-              onClick={fetchData}
+              onClick={() => fetchData()}
               disabled={loading}
               suppressHydrationWarning
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200"
@@ -275,7 +275,7 @@ export default function GCCDashboard() {
                   key={`gcc-job-${i}`}
                   job={job}
                   index={i}
-                  rating={job.company_rating}
+                  rating={job.company_rating ?? undefined}
                   isViewed={job.id ? openedJobIds.includes(job.id) : false}
                   onViewed={() => job.id && handleJobOpened(job.id)}
                   userRole="PO"
