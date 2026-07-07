@@ -307,15 +307,48 @@ export async function cleanupOldJobs(daysOld = 7): Promise<number> {
  * Fetch jobs from the last 30 days in one query and bin them by timeframe.
  * Matches the logic in the Python backend database.py.
  */
-export async function getBinnedJobs(): Promise<Record<string, { jobs: JobPayload[]; count: number }>> {
+export async function getBinnedJobs(
+  q?: string | null,
+  rating?: string | null
+): Promise<Record<string, { jobs: JobPayload[]; count: number }>> {
   const now = new Date();
   const threshold = new Date(now.getTime() - 720 * 60 * 60 * 1000); // 720 hours = 30 days
 
-  const rows = await db
+  // Parse rating
+  let ratingCondition = sql`1=1`;
+  if (rating) {
+    if (rating === "0-1") ratingCondition = lte(scrapedJobs.companyRating, 1.99);
+    else if (rating === "2-3") ratingCondition = and(gte(scrapedJobs.companyRating, 2), lt(scrapedJobs.companyRating, 3));
+    else if (rating === "3-4") ratingCondition = and(gte(scrapedJobs.companyRating, 3), lt(scrapedJobs.companyRating, 4));
+    else if (rating === "4-5") ratingCondition = and(gte(scrapedJobs.companyRating, 4), lte(scrapedJobs.companyRating, 5));
+  }
+
+  if (q) {
+    const baseQuery = db
+      .select()
+      .from(scrapedJobs)
+      .where(
+        and(
+          sql`search_vector @@ websearch_to_tsquery('english', ${q})`,
+          ratingCondition
+        )
+      )
+      .orderBy(desc(scrapedJobs.postedDatetime))
+      .limit(300); // Cap results to avoid massive payloads
+
+    const rows = await baseQuery;
+    const jobs = rows.map(rowToPayload);
+    return {
+      search_results: { jobs, count: jobs.length },
+    };
+  }
+
+  const baseQuery = db
     .select()
     .from(scrapedJobs)
-    .where(gte(scrapedJobs.postedDatetime, threshold))
-    .orderBy(desc(scrapedJobs.postedDatetime));
+    .where(and(gte(scrapedJobs.postedDatetime, threshold), ratingCondition));
+
+  const rows = await baseQuery.orderBy(desc(scrapedJobs.postedDatetime));
 
   const t_1: JobPayload[] = [];
   const t_2: JobPayload[] = [];

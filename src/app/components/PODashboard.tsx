@@ -31,7 +31,9 @@ interface StudentDashboardData {
   "5_hours": TimeframeData;
   "24_hours": TimeframeData;
   "1_week": TimeframeData;
+  "1_week": TimeframeData;
   "1_month": TimeframeData;
+  "search_results"?: TimeframeData;
 }
 
 const TIMEFRAME_IDS = [
@@ -76,15 +78,23 @@ export default function PODashboard() {
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
-  const [companyRatings, setCompanyRatings] = useState<Record<string, number>>(
-    {},
-  );
+  const [companyRatings, setCompanyRatings] = useState<Record<string, number>>({});
   const [ratingsLoading, setRatingsLoading] = useState(false);
   const [ratingsError, setRatingsError] = useState("");
   const [openedJobIds, setOpenedJobIds] = useState<number[]>([]);
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
   const [isTimelinePinned, setIsTimelinePinned] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [ratingFilter, setRatingFilter] = useState("all");
   const timelineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleTimelineEnter = () => {
     if (timelineTimeoutRef.current) {
@@ -134,7 +144,8 @@ export default function PODashboard() {
     const counts: Record<string, number> = {};
     let total = 0;
 
-    for (const id of TIMEFRAME_IDS) {
+    const keys = Object.keys(data) as (keyof StudentDashboardData)[];
+    for (const id of keys) {
       const jobs = data[id]?.jobs ?? [];
       total += jobs.length;
       for (const job of jobs) {
@@ -154,24 +165,23 @@ export default function PODashboard() {
   // Data with each timeframe's job list narrowed to jobs that match at
   // least one of the selected schools. When nothing is selected we return
   // the original data untouched so there's no unnecessary work.
-  const filteredData = useMemo<StudentDashboardData | null>(() => {
+  const filteredData = useMemo<Record<string, TimeframeData> | null>(() => {
     if (!data) return null;
-    if (selectedSchools.length === 0) return data;
+    if (selectedSchools.length === 0) return data as Record<string, TimeframeData>;
     const selSet = new Set(selectedSchools);
-    const filterTimeframe = (tf: TimeframeData): TimeframeData => {
-      const jobs = (tf?.jobs ?? []).filter((j) =>
+    const filterTimeframe = (tf?: TimeframeData): TimeframeData => {
+      if (!tf) return { jobs: [], count: 0 };
+      const jobs = (tf.jobs ?? []).filter((j) =>
         (j.schools ?? []).some((s) => selSet.has(s)),
       );
       return { jobs, count: jobs.length };
     };
-    return {
-      "1_hour": filterTimeframe(data["1_hour"]),
-      "2_hours": filterTimeframe(data["2_hours"]),
-      "5_hours": filterTimeframe(data["5_hours"]),
-      "24_hours": filterTimeframe(data["24_hours"]),
-      "1_week": filterTimeframe(data["1_week"]),
-      "1_month": filterTimeframe(data["1_month"]),
-    };
+    
+    const result: Record<string, TimeframeData> = {};
+    for (const key of Object.keys(data)) {
+      result[key] = filterTimeframe(data[key as keyof StudentDashboardData]);
+    }
+    return result;
   }, [data, selectedSchools]);
 
   // Drop any selected schools that disappeared after a refresh so the
@@ -190,7 +200,7 @@ export default function PODashboard() {
     if (!data) return;
     // Collect all unique non-empty company names across every timeframe
     const companySet = new Set<string>();
-    for (const id of TIMEFRAME_IDS) {
+    for (const id of Object.keys(data) as (keyof StudentDashboardData)[]) {
       for (const job of data[id]?.jobs ?? []) {
         if (job.company) companySet.add(job.company);
       }
@@ -217,13 +227,20 @@ export default function PODashboard() {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (query?: string, rFilter?: string) => {
     try {
       setLoading(true);
+      const qParam = query !== undefined ? query : debouncedSearchQuery;
+      const rParam = rFilter !== undefined ? rFilter : ratingFilter;
+      let url = `/api/student/jobs/all-timeframes?t=${Date.now()}`;
+      if (qParam) {
+        url += `&q=${encodeURIComponent(qParam)}`;
+      }
+      if (rParam && rParam !== "all") {
+        url += `&rating=${encodeURIComponent(rParam)}`;
+      }
       const response = await fetch(
-        // Always use the same-origin Next.js API route so it works on Vercel
-        // (reads from Neon DB directly without going through the HF scraper)
-        `/api/student/jobs/all-timeframes?t=${Date.now()}`,
+        url,
         {
           headers: {
             "Cache-Control": "no-cache",
@@ -247,11 +264,11 @@ export default function PODashboard() {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(debouncedSearchQuery, ratingFilter);
     // Auto-refresh every 1 minute for real-time shifting
-    const interval = setInterval(fetchData, 60 * 1000);
+    const interval = setInterval(() => fetchData(debouncedSearchQuery, ratingFilter), 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [debouncedSearchQuery, ratingFilter]);
 
   const formatLastUpdated = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -314,6 +331,26 @@ export default function PODashboard() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center md:justify-end gap-3">
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search HR, role, company..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200 outline-none placeholder:font-medium"
+                style={{
+                  background: "var(--surface-1)",
+                  color: "var(--foreground)",
+                  border: "2px solid var(--card-border)",
+                  minWidth: "220px"
+                }}
+              />
+              <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
             {/* Google Sheets Data Export Link */}
             <a
               href="https://docs.google.com/spreadsheets/d/1IXS7bNecE3oDES6tHz_odh8Ee9SDF3AZ5k7JRZ0NjGc/edit?usp=sharing"
@@ -372,7 +409,7 @@ export default function PODashboard() {
 
             {/* Refresh Button */}
             <button
-              onClick={fetchData}
+              onClick={() => fetchData()}
               disabled={loading}
               suppressHydrationWarning
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200"
@@ -442,16 +479,36 @@ export default function PODashboard() {
 
       {/* ── Main Content ────────────────────────────── */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
-        {/* Controls row: last-updated timestamp + school filter */}
+        {/* Controls row: last-updated timestamp + rating filter */}
         {data && (
           <div
-            className={`mb-6 flex items-center justify-between gap-3 flex-wrap transition-opacity duration-300 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}
+            className={`mb-6 flex flex-col gap-4 transition-opacity duration-300 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}
           >
-            <p className="text-sm" style={{ color: "var(--muted)" }}>
-              {lastUpdated
-                ? `Last updated: ${formatLastUpdated(lastUpdated)}`
-                : ""}
-            </p>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-sm" style={{ color: "var(--muted)" }}>
+                {lastUpdated
+                  ? `Last updated: ${formatLastUpdated(lastUpdated)}`
+                  : ""}
+              </p>
+              
+              <select
+                value={ratingFilter}
+                onChange={(e) => setRatingFilter(e.target.value)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200 outline-none cursor-pointer"
+                style={{
+                  background: "var(--surface-1)",
+                  color: "var(--foreground)",
+                  border: "2px solid var(--card-border)",
+                }}
+              >
+                <option value="all">⭐ Filter by Rating</option>
+                <option value="4-5">⭐ 4 - 5 Stars</option>
+                <option value="3-4">⭐ 3 - 4 Stars</option>
+                <option value="2-3">⭐ 2 - 3 Stars</option>
+                <option value="0-1">⭐ 1 Star &amp; Below</option>
+              </select>
+            </div>
+
             <StudentSchoolFilter
               schools={allSchools}
               selected={selectedSchools}
@@ -510,7 +567,87 @@ export default function PODashboard() {
           <div
             className={`space-y-12 transition-all duration-500 ${loading ? "animate-progress-pulse pointer-events-none" : ""}`}
           >
-            {[
+            {filteredData["search_results"] ? (
+              <section id="section-search_results" style={{ scrollMarginTop: "90px" }}>
+                <div className="flex items-center gap-3 mb-6">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{
+                      background: "var(--accent-dim)",
+                      border: "2px solid var(--accent)",
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="var(--accent)" viewBox="0 0 24 24">
+                      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2
+                      className="text-xl font-bold tracking-tight"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      Search Results
+                    </h2>
+                    <p className="text-sm" style={{ color: "var(--muted)" }}>
+                      {filteredData["search_results"].count} opportunities found for "{debouncedSearchQuery}"
+                    </p>
+                  </div>
+                </div>
+
+                {(filteredData["search_results"].jobs || []).length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {(filteredData["search_results"].jobs || []).map((job, i) => (
+                      <JobCard
+                        key={`search-${i}`}
+                        job={job}
+                        index={i}
+                        rating={
+                          job.company
+                            ? (companyRatings[job.company] ??
+                              job.company_rating ??
+                              undefined)
+                            : undefined
+                        }
+                        isViewed={job.id ? openedJobIds.includes(job.id) : false}
+                        onViewed={() => job.id && handleJobOpened(job.id)}
+                        userRole={userRole}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div
+                      className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4"
+                      style={{
+                        background: "var(--surface-1)",
+                        border: "2px solid var(--card-border)",
+                      }}
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="var(--muted)"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "var(--muted)" }}
+                    >
+                      No jobs matched your search
+                    </p>
+                  </div>
+                )}
+              </section>
+            ) : (
+              [
               {
                 id: "1_hour" as const,
                 title: "Latest Opportunities (Last Hour)",
@@ -662,13 +799,13 @@ export default function PODashboard() {
                   </div>
                 )}
               </section>
-            ))}
+            )))}
           </div>
         )}
 
         {/* Empty State - No data, or filter excluded everything */}
-        {filteredData &&
-          TIMEFRAME_IDS.every((id) => (filteredData[id]?.count || 0) === 0) && (
+            {filteredData && !filteredData["search_results"] &&
+              TIMEFRAME_IDS.every((id) => (filteredData[id]?.count || 0) === 0) && (
             <div
               className={`flex flex-col items-center justify-center py-20 animate-fade-in-up transition-opacity duration-500 ${loading ? "opacity-60 pointer-events-none" : "opacity-100"}`}
             >

@@ -6,9 +6,13 @@ import { user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { cleanupOldJobs, getBinnedJobs } from "@/db/queries";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const data = await getBinnedJobs();
+    const { searchParams } = new URL(request.url);
+    const q = searchParams.get("q");
+    const rating = searchParams.get("rating");
+
+    const data = await getBinnedJobs(q, rating);
     
     // Check if user is logged in to fetch their opened jobs list
     let openedJobIds: number[] = [];
