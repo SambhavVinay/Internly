@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const rating = searchParams.get("rating");
 
   let query: string;
-  let params: string[];
+  let params: string[] = [];
 
   let conditions = [];
   

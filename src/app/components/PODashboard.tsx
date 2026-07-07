@@ -31,7 +31,6 @@ interface StudentDashboardData {
   "5_hours": TimeframeData;
   "24_hours": TimeframeData;
   "1_week": TimeframeData;
-  "1_week": TimeframeData;
   "1_month": TimeframeData;
   "search_results"?: TimeframeData;
 }
@@ -167,7 +166,7 @@ export default function PODashboard() {
   // the original data untouched so there's no unnecessary work.
   const filteredData = useMemo<Record<string, TimeframeData> | null>(() => {
     if (!data) return null;
-    if (selectedSchools.length === 0) return data as Record<string, TimeframeData>;
+    if (selectedSchools.length === 0) return data as unknown as Record<string, TimeframeData>;
     const selSet = new Set(selectedSchools);
     const filterTimeframe = (tf?: TimeframeData): TimeframeData => {
       if (!tf) return { jobs: [], count: 0 };

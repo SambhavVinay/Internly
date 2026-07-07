@@ -318,9 +318,9 @@ export async function getBinnedJobs(
   let ratingCondition = sql`1=1`;
   if (rating) {
     if (rating === "0-1") ratingCondition = lte(scrapedJobs.companyRating, 1.99);
-    else if (rating === "2-3") ratingCondition = and(gte(scrapedJobs.companyRating, 2), lt(scrapedJobs.companyRating, 3));
-    else if (rating === "3-4") ratingCondition = and(gte(scrapedJobs.companyRating, 3), lt(scrapedJobs.companyRating, 4));
-    else if (rating === "4-5") ratingCondition = and(gte(scrapedJobs.companyRating, 4), lte(scrapedJobs.companyRating, 5));
+    else if (rating === "2-3") ratingCondition = and(gte(scrapedJobs.companyRating, 2), lt(scrapedJobs.companyRating, 3))!;
+    else if (rating === "3-4") ratingCondition = and(gte(scrapedJobs.companyRating, 3), lt(scrapedJobs.companyRating, 4))!;
+    else if (rating === "4-5") ratingCondition = and(gte(scrapedJobs.companyRating, 4), lte(scrapedJobs.companyRating, 5))!;
   }
 
   if (q) {
