@@ -324,12 +324,20 @@ export async function getBinnedJobs(
   }
 
   if (q) {
+    const sanitized = q.replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+    let searchCondition = sql`search_vector @@ websearch_to_tsquery('english', ${q})`;
+    
+    if (sanitized) {
+      const tsQueryStr = sanitized.split(/\s+/).filter(Boolean).map(word => `${word}:*`).join(' & ');
+      searchCondition = sql`search_vector @@ to_tsquery('english', ${tsQueryStr})`;
+    }
+
     const baseQuery = db
       .select()
       .from(scrapedJobs)
       .where(
         and(
-          sql`search_vector @@ websearch_to_tsquery('english', ${q})`,
+          searchCondition,
           ratingCondition
         )
       )

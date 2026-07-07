@@ -25,8 +25,15 @@ export async function GET(request: Request) {
   }
   
   if (q) {
-    conditions.push(`search_vector @@ websearch_to_tsquery('english', $1)`);
-    params.push(q);
+    const sanitized = q.replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+    if (sanitized) {
+      const tsQueryStr = sanitized.split(/\s+/).filter(Boolean).map(word => `${word}:*`).join(' & ');
+      conditions.push(`search_vector @@ to_tsquery('english', $1)`);
+      params.push(tsQueryStr);
+    } else {
+      conditions.push(`search_vector @@ websearch_to_tsquery('english', $1)`);
+      params.push(q);
+    }
   }
   
   if (rating) {
