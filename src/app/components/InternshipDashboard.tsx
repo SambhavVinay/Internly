@@ -80,6 +80,24 @@ export default function InternshipDashboard() {
   } | null>(null);
   const sweepPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // One Week Run state (Discover → LinkedIn → email)
+  type OneWeekStatus = "idle" | "running" | "done" | "error";
+  type TimedRunType = "one_week" | "one_hour";
+  const [oneWeekStatus, setOneWeekStatus] = useState<OneWeekStatus>("idle");
+  const [activeRunType, setActiveRunType] = useState<TimedRunType | null>(null);
+  const [oneWeekState, setOneWeekState] = useState<{
+    phase?: string | null;
+    progress?: string;
+    run_type?: string | null;
+    run_label?: string | null;
+    discover?: { total?: number; error?: string | null };
+    linkedin?: { total?: number; error?: string | null };
+    email?: { sent?: boolean; error?: string | null; to?: string[] };
+    elapsed_seconds?: number;
+    error?: string | null;
+  } | null>(null);
+  const oneWeekPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Keep a ref to the live jobs list so the done-handler can read it without
   // a stale closure (jobs state updates are async).
   const jobsRef = useRef<Job[]>([]);
@@ -180,6 +198,101 @@ export default function InternshipDashboard() {
 
   // Clean up poll on unmount
   useEffect(() => () => stopSweepPoll(), [stopSweepPoll]);
+
+  // ── One Week Run (Discover → LinkedIn → email) ──────────────────────────
+  const stopOneWeekPoll = useCallback(() => {
+    if (oneWeekPollRef.current) {
+      clearInterval(oneWeekPollRef.current);
+      oneWeekPollRef.current = null;
+    }
+  }, []);
+
+  const pollOneWeekStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/one-week-run/status`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setOneWeekState(data);
+      if (data.run_type === "one_week" || data.run_type === "one_hour") {
+        setActiveRunType(data.run_type);
+      }
+      if (!data.is_running) {
+        const failed =
+          Boolean(data.error) ||
+          (data.email && data.email.sent === false && data.email.error);
+        setOneWeekStatus(failed ? "error" : "done");
+        stopOneWeekPoll();
+      }
+    } catch {
+      // ignore transient poll errors
+    }
+  }, [stopOneWeekPoll]);
+
+  const triggerTimedRun = useCallback(
+    async (runType: TimedRunType) => {
+      const endpoint =
+        runType === "one_hour" ? "one-hour-run" : "one-week-run";
+      const label = runType === "one_hour" ? "One Hour Run" : "One Week Run";
+      try {
+        setOneWeekStatus("running");
+        setActiveRunType(runType);
+        setOneWeekState({
+          phase: "discover",
+          run_type: runType,
+          run_label: label,
+          progress: `Starting ${label}…`,
+        });
+        const res = await fetch(`${API_BASE}/admin/${endpoint}`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (data.status === "already_running") {
+          // Attach to the in-flight run (may be the other run type)
+        }
+        stopOneWeekPoll();
+        oneWeekPollRef.current = setInterval(pollOneWeekStatus, 3000);
+        await pollOneWeekStatus();
+      } catch (err) {
+        setOneWeekStatus("error");
+        console.error(`Failed to trigger ${label}`, err);
+      }
+    },
+    [pollOneWeekStatus, stopOneWeekPoll],
+  );
+
+  const stopOneWeekRun = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE}/admin/one-week-run/stop`, { method: "POST" });
+      stopOneWeekPoll();
+      setOneWeekStatus("idle");
+      setActiveRunType(null);
+      setOneWeekState(null);
+    } catch (err) {
+      console.error("Failed to stop timed run", err);
+    }
+  }, [stopOneWeekPoll]);
+
+  useEffect(() => () => stopOneWeekPoll(), [stopOneWeekPoll]);
+
+  // Resume timed-run polling if a run is already active on mount
+  useEffect(() => {
+    fetch(`${API_BASE}/admin/one-week-run/status`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        if (data.is_running) {
+          setOneWeekStatus("running");
+          setOneWeekState(data);
+          if (data.run_type === "one_week" || data.run_type === "one_hour") {
+            setActiveRunType(data.run_type);
+          }
+          stopOneWeekPoll();
+          oneWeekPollRef.current = setInterval(pollOneWeekStatus, 3000);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const TOTAL_SCHOOLS = 8; // matches _AUTO_SCRAPE_SCHOOLS length in main.py
 
@@ -591,6 +704,151 @@ export default function InternshipDashboard() {
               Scrape Analytics
             </a>
 
+            {/* Timed Run Buttons: One Week Run + One Hour Run */}
+            {(
+              [
+                {
+                  type: "one_week" as const,
+                  id: "one-week-run-btn",
+                  label: "One Week Run",
+                  shortLabel: "One Week",
+                  freshnessHint: "Past week",
+                },
+                {
+                  type: "one_hour" as const,
+                  id: "one-hour-run-btn",
+                  label: "One Hour Run",
+                  shortLabel: "One Hour",
+                  freshnessHint: "Past 24 hours",
+                },
+              ]
+            ).map((run) => {
+              const isActive = activeRunType === run.type;
+              const btnStatus = isActive ? oneWeekStatus : "idle";
+              return (
+                <button
+                  key={run.type}
+                  id={run.id}
+                  onClick={() => triggerTimedRun(run.type)}
+                  disabled={oneWeekStatus === "running"}
+                  title={
+                    oneWeekStatus === "running"
+                      ? oneWeekState?.progress ||
+                        `${oneWeekState?.run_label || "A run"} in progress…`
+                      : `Run Discover + LinkedIn (intern / ${run.freshnessHint}) and email the report`
+                  }
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200"
+                  style={{
+                    background:
+                      btnStatus === "running"
+                        ? "rgba(109,40,217,0.12)"
+                        : btnStatus === "done"
+                          ? "rgba(5,150,105,0.10)"
+                          : btnStatus === "error"
+                            ? "rgba(239,68,68,0.10)"
+                            : "rgba(109,40,217,0.08)",
+                    color:
+                      btnStatus === "running"
+                        ? "var(--accent)"
+                        : btnStatus === "done"
+                          ? "var(--success)"
+                          : btnStatus === "error"
+                            ? "var(--error)"
+                            : "var(--accent)",
+                    border: `2px solid ${
+                      btnStatus === "running"
+                        ? "var(--accent)"
+                        : btnStatus === "done"
+                          ? "var(--success)"
+                          : btnStatus === "error"
+                            ? "var(--error)"
+                            : "var(--accent)"
+                    }`,
+                    cursor:
+                      oneWeekStatus === "running" ? "not-allowed" : "pointer",
+                    opacity: oneWeekStatus === "running" && !isActive ? 0.5 : oneWeekStatus === "running" ? 0.85 : 1,
+                  }}
+                >
+                  {btnStatus === "running" ? (
+                    <svg
+                      className="w-3 h-3 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  ) : btnStatus === "done" ? (
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                  )}
+                  {btnStatus === "running"
+                    ? oneWeekState?.phase === "linkedin"
+                      ? "LinkedIn scrape…"
+                      : oneWeekState?.phase === "email"
+                        ? "Sending email…"
+                        : oneWeekState?.phase === "discover"
+                          ? "Discover scrape…"
+                          : `${run.label}…`
+                    : btnStatus === "done"
+                      ? oneWeekState?.email?.sent
+                        ? `Done · emailed ✓`
+                        : `${run.shortLabel} done`
+                      : btnStatus === "error"
+                        ? `${run.shortLabel} failed`
+                        : run.label}
+                </button>
+              );
+            })}
+
+            {(oneWeekStatus === "running" ||
+              oneWeekStatus === "done" ||
+              oneWeekStatus === "error") && (
+              <button
+                onClick={stopOneWeekRun}
+                title="Cancel run / dismiss status"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200"
+                style={{
+                  background: "rgba(239,68,68,0.08)",
+                  color: "var(--error)",
+                  border: "2px solid var(--error)",
+                  cursor: "pointer",
+                }}
+              >
+                {oneWeekStatus === "running" ? "Cancel Run" : "Dismiss"}
+              </button>
+            )}
+
             {/* Auto-Scrape Schools Button */}
             <button
               id="auto-scrape-btn"
@@ -757,6 +1015,62 @@ export default function InternshipDashboard() {
 
       {/* ── Main ────────────────────────────────────── */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-8">
+        {/* Timed run (One Week / One Hour) progress banner */}
+        {oneWeekStatus !== "idle" && oneWeekState && (
+          <div
+            className="mb-5 px-4 py-3 rounded-lg text-sm"
+            style={{
+              background:
+                oneWeekStatus === "error"
+                  ? "rgba(239,68,68,0.08)"
+                  : oneWeekStatus === "done"
+                    ? "rgba(5,150,105,0.08)"
+                    : "rgba(109,40,217,0.08)",
+              border: `2px solid ${
+                oneWeekStatus === "error"
+                  ? "var(--error)"
+                  : oneWeekStatus === "done"
+                    ? "var(--success)"
+                    : "var(--accent)"
+              }`,
+              color: "var(--foreground)",
+            }}
+          >
+            <div className="font-bold" style={{ color: "var(--accent)" }}>
+              {oneWeekState.run_label ||
+                (activeRunType === "one_hour" ? "One Hour Run" : "One Week Run")}
+              {oneWeekStatus === "running"
+                ? " — in progress"
+                : oneWeekStatus === "done"
+                  ? " — complete"
+                  : " — failed"}
+            </div>
+            <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+              {oneWeekState.progress ||
+                (oneWeekStatus === "done"
+                  ? "Discover + LinkedIn finished."
+                  : `Running fixed filters (intern · ${
+                      (oneWeekState.run_type || activeRunType) === "one_hour"
+                        ? "Past 24 hours"
+                        : "Past week"
+                    }).`)}
+              {typeof oneWeekState.discover?.total === "number" && (
+                <> · Discover: {oneWeekState.discover.total}</>
+              )}
+              {typeof oneWeekState.linkedin?.total === "number" && (
+                <> · LinkedIn: {oneWeekState.linkedin.total}</>
+              )}
+              {oneWeekState.email?.sent && <> · Email sent</>}
+              {oneWeekState.email?.error && (
+                <> · Email error: {oneWeekState.email.error}</>
+              )}
+              {typeof oneWeekState.elapsed_seconds === "number" && (
+                <> · {oneWeekState.elapsed_seconds}s</>
+              )}
+            </p>
+          </div>
+        )}
+
         {/* ── Scrape Mode Tabs ───────────────────────────── */}
         <div className="flex gap-2 mb-5">
           <button
